@@ -291,6 +291,17 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
   }
 }
 
+
+/* ===== 下部操作ボタンを現場向けに大きく固定 ===== */
+.action-area {
+  margin-top: 20px !important;
+}
+
+.action-area button {
+  min-height: 56px !important;
+  font-size: 18px !important;
+}
+
 </style>
 </head>
 <body>
@@ -299,10 +310,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <h1>📦 入庫報告書フォーム</h1>
 <p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。</p>
 
-<div class="action-area">
-  <button type="button" onclick="showPdfGuide()">PDF保存 / メール送信</button>
-  <button type="button" class="green" onclick="updateReport()">帳票を更新</button>
-</div>
+
 
 <h2>基本情報</h2>
 <div class="row">
@@ -356,7 +364,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <div class="action-area">
   <button type="button" class="green" onclick="updateReport()">帳票を更新</button>
   <button type="button" onclick="showPdfGuide()">PDF保存 / メール送信</button>
-  <p class="small">PDFはA4 1ページ固定で作成します。iPhoneでは共有 → プリント → PDF保存/メールの流れです。</p>
+  <p class="small">入力が終わったら、ここからPDF専用画面を開いてA4 1ページで保存します。</p>
 </div>
 </div>
 
@@ -577,7 +585,45 @@ function compressPhoto(input,no){
  var reader=new FileReader();
  reader.onload=function(e){var img=new Image();img.onload=function(){var max=1200,w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max}if(h>=w&&h>max){w=Math.round(w*max/h);h=max}var c=document.createElement("canvas");c.width=w;c.height=h;var ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);var q=.82,data=c.toDataURL("image/jpeg",q),kb=Math.round(data.length*.75/1024);while(kb>200&&q>.35){q-=.07;data=c.toDataURL("image/jpeg",q);kb=Math.round(data.length*.75/1024)}while(kb>200&&w>500&&h>500){w=Math.round(w*.85);h=Math.round(h*.85);c.width=w;c.height=h;ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);data=c.toDataURL("image/jpeg",.42);kb=Math.round(data.length*.75/1024)}g("photoSlot"+no).innerHTML='<img src="'+data+'">';g("photoStatus"+no).innerText="圧縮後：約"+kb+"KB"};img.src=e.target.result};reader.readAsDataURL(input.files[0]);
 }
-function showPdfGuide(){updateReport();alert("A4 1ページでPDF保存します。次の画面で共有または保存を選んでください。");window.print()}
+function showPdfGuide(){
+  updateReport();
+
+  var sheet = document.querySelector(".sheet");
+  if(!sheet){
+    alert("帳票が見つかりません。");
+    return;
+  }
+
+  var printHtml = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>入庫報告書PDF</title><style>' +
+  '@page{size:A4 portrait;margin:0;}' +
+  'html,body{margin:0;padding:0;width:210mm;height:297mm;background:#fff;overflow:hidden;font-family:"Yu Gothic",Meiryo,Arial,sans-serif;}' +
+  '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+  '.sheet{width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;margin:0!important;padding:3mm 4mm 3mm!important;border:1mm solid #111!important;transform:none!important;scale:1!important;position:relative!important;overflow:hidden!important;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}' +
+  '.header{display:grid;grid-template-columns:58px 1fr 310px;border:2px solid #111;border-bottom:0;height:12mm}.qr{border-right:1px solid #111;display:flex;align-items:center;justify-content:center}.qrbox{width:34px;height:34px;background:linear-gradient(90deg,#111 8px,transparent 8px 12px,#111 12px 16px,transparent 16px),linear-gradient(#111 8px,transparent 8px 12px,#111 12px 16px,transparent 16px);background-size:16px 16px;opacity:.85}.title{display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900}.head-right{border-left:1px solid #111}.head-line{display:grid;grid-template-columns:92px 1fr;height:21px;border-bottom:1px solid #111;font-size:12px;align-items:center}.head-line:last-child{border-bottom:0}.head-label{height:100%;display:flex;align-items:center;justify-content:center;border-right:1px solid #111;background:#eee;font-weight:900}.head-value{text-align:center;padding:0 4px}' +
+  '.logo-row{display:grid;grid-template-columns:1fr 310px;height:7mm;border:2px solid #111;border-bottom:0}.logo{display:flex;align-items:center;font-size:18px;font-weight:900;font-style:italic;padding-left:7px}.logo-side{border-left:1px solid #111}.top-grid{border:2px solid #111;border-bottom:0}.top-row{display:grid;grid-template-columns:1fr 1fr;min-height:10.5mm;border-bottom:1px solid #111}.top-cell{position:relative;display:flex;align-items:end;justify-content:center;padding:16px 6px 4px;font-size:17px;text-align:center}.top-cell:first-child{border-right:1px solid #111}.caption{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:11px;font-weight:900;color:#444}.mawb-row{display:grid;grid-template-columns:1fr 1fr;border:2px solid #111;border-bottom:0;height:8.5mm}.mawb-cell{display:flex;align-items:end;padding:0 8px 3px;font-size:17px}.mawb-cell:first-child{border-right:1px solid #111}.mawb-label{font-family:serif;font-size:17px;font-weight:700}' +
+  'table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;font-size:12px}.detail-table th,.detail-table td{border:1px solid #111;text-align:center;height:5.8mm;padding:1px;font-size:10px}.detail-table th{background:#e7e7e7;font-weight:900}.detail-table .remarks{text-align:left;padding-left:5px}.detail-table .shape{font-size:10px}.total{display:grid;grid-template-columns:160px 1fr 160px 1fr;border:2px solid #111;border-top:0;height:11mm;font-size:25px}.total div{display:flex;align-items:center;justify-content:center;border-right:1px solid #111}.total div:nth-child(1),.total div:nth-child(3){background:#eee;font-weight:900}.total div:last-child{border-right:0}' +
+  '.photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;height:96mm;border-left:2px solid #111;border-right:2px solid #111;border-bottom:2px solid #111}.photo-slot{border-right:1px solid #111;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;position:relative}.photo-slot:nth-child(3),.photo-slot:nth-child(6){border-right:0}.photo-slot:nth-child(n+4){border-bottom:0}.photo-slot img{width:100%;height:100%;object-fit:cover}.photo-name{position:absolute;top:8px;left:10px;font-size:28px;color:#333}.blank-space{height:25mm;border-left:2px solid #111;border-right:2px solid #111}.footer{position:absolute;left:4mm;right:4mm;bottom:2mm;height:15mm}.barcode-svg{display:block;width:100%;height:8mm}.barcode-text{font-family:monospace;font-size:14px;letter-spacing:4px;text-align:left;margin-left:8px;line-height:1.1}.company{position:absolute;right:0;bottom:0;font-size:13px}' +
+  '@media print{html,body{margin:0!important;padding:0!important;width:210mm!important;height:297mm!important;overflow:hidden!important}.sheet{width:210mm!important;height:297mm!important;}}' +
+  '</style></head><body>' + sheet.outerHTML + '</body></html>';
+
+  var w = window.open("", "_blank");
+  if(!w){
+    alert("PDF専用画面を開けませんでした。Safariのポップアップ許可を確認してください。");
+    return;
+  }
+  w.document.open();
+  w.document.write(printHtml);
+  w.document.close();
+
+  setTimeout(function(){
+    try{
+      w.focus();
+      w.print();
+    }catch(e){
+      alert("PDF専用画面を開きました。右上の共有または印刷からPDF保存してください。");
+    }
+  }, 700);
+}
 window.onload=function(){
  currentDate=new Date();
  g("createdAtText").value=makeDateText(currentDate);
