@@ -23,7 +23,7 @@ button.dark{background:#111}button.green{background:#16803c}button.red{backgroun
 .sheet-wrap{background:#fff;padding:12px;overflow:auto}
 .sheet{width:794px;height:1123px;margin:0 auto;background:#fff;border:2px solid #111;padding:10px 14px 8px;font-family:"Yu Gothic",Meiryo,Arial,sans-serif;position:relative;overflow:hidden}
 .header{display:grid;grid-template-columns:58px 1fr 310px;border:2px solid #111;border-bottom:0;height:44px}
-.qr{border-right:1px solid #111;display:flex;align-items:center;justify-content:center}.qr img{width:34px;height:34px;display:block;image-rendering:pixelated;background:#fff}
+.qr{border-right:1px solid #111;display:flex;align-items:center;justify-content:center}.qr canvas{width:34px;height:34px;display:block;image-rendering:pixelated;background:#fff}
 .title{display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900}.head-right{border-left:1px solid #111}.head-line{display:grid;grid-template-columns:92px 1fr;height:21px;border-bottom:1px solid #111;font-size:12px;align-items:center}.head-line:last-child{border-bottom:0}.head-label{height:100%;display:flex;align-items:center;justify-content:center;border-right:1px solid #111;background:#eee;font-weight:900}.head-value{text-align:center;padding:0 4px}
 .logo-row{display:grid;grid-template-columns:1fr 310px;height:24px;border:2px solid #111;border-bottom:0}.logo{display:flex;align-items:center;font-size:18px;font-weight:900;font-style:italic;padding-left:7px}.logo-side{border-left:1px solid #111}
 .top-grid{border:2px solid #111;border-bottom:0}.top-row{display:grid;grid-template-columns:1fr 1fr;min-height:38px;border-bottom:1px solid #111}.top-cell{position:relative;display:flex;align-items:end;justify-content:center;padding:16px 6px 4px;font-size:17px;text-align:center}.top-cell:first-child{border-right:1px solid #111}.caption{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:11px;font-weight:900;color:#444}
@@ -704,7 +704,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 
 
 /* ===== バーコード長さ・2次元バーコード調整 ===== */
-.qr img {
+.qr canvas {
   width: 34px !important;
   height: 34px !important;
   image-rendering: pixelated;
@@ -722,7 +722,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
     max-width: 45mm !important;
   }
 
-  .qr img {
+  .qr canvas {
     width: 8mm !important;
     height: 8mm !important;
   }
@@ -738,7 +738,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <div class="app">
 <div class="card">
 <h1>📦 入庫報告書フォーム</h1>
-<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。PDFは印刷経由ではなく、A4 1ページのPDFファイルとして直接作成します。添付ファイル名は文字化け防止のため英数字にしています。</p>
+<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。PDFは印刷経由ではなく、A4 1ページのPDFファイルとして直接作成します。QRコードは外部接続なしで端末内生成します。</p>
 
 
 
@@ -801,7 +801,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <div class="sheet-wrap">
 <div class="sheet">
 <div class="header">
-<div class="qr"><img id="qrImg" alt="QR" referrerpolicy="no-referrer" crossorigin="anonymous"></div>
+<div class="qr"><canvas id="qrCanvas" width="84" height="84" aria-label="QR"></canvas></div>
 <div class="title">入庫報告書</div>
 <div class="head-right">
 <div class="head-line"><div class="head-label">作成日時</div><div class="head-value" id="outCreatedAt"></div></div>
@@ -1002,22 +1002,187 @@ function renderBarcodeDigits(digits){
 }
 
 function renderQrDigits(digits){
-  var img = g("qrImg");
-  if(!img) return Promise.resolve();
+  var canvas = g("qrCanvas");
+  if(!canvas) return Promise.resolve();
+
+  digits = String(digits || "").replace(/\D/g, "");
+  var ctx = canvas.getContext("2d");
+  var size = 21;
+  var scale = 4;
+  canvas.width = size * scale;
+  canvas.height = size * scale;
+
+  function clear(){
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+
   if(!digits){
-    img.removeAttribute("src");
+    clear();
     return Promise.resolve();
   }
-  return new Promise(function(resolve){
-    img.onload = function(){ resolve(); };
-    img.onerror = function(){
-      // 取得失敗時は簡易表示
-      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="84" height="84"><rect width="84" height="84" fill="white"/><rect x="2" y="2" width="80" height="80" fill="white" stroke="black" stroke-width="2"/><text x="42" y="46" font-size="14" text-anchor="middle" fill="black">'+digits.slice(-6)+'</text></svg>';
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      resolve();
+
+  if(digits.length > 41){
+    digits = digits.slice(0,41);
+  }
+
+  function gfMul(x,y){
+    var z=0;
+    while(y){
+      if(y&1) z ^= x;
+      x <<= 1;
+      if(x & 0x100) x ^= 0x11d;
+      y >>= 1;
+    }
+    return z;
+  }
+  function gfPow(x,p){
+    var y=1;
+    while(p-- > 0) y = gfMul(y,x);
+    return y;
+  }
+  function rsGenerator(degree){
+    var poly=[1];
+    for(var i=0;i<degree;i++){
+      var next=new Array(poly.length+1).fill(0);
+      for(var j=0;j<poly.length;j++){
+        next[j] ^= gfMul(poly[j], gfPow(2,i));
+        next[j+1] ^= poly[j];
+      }
+      poly=next;
+    }
+    return poly.slice(1);
+  }
+  function rsRemainder(data, degree){
+    var gen=rsGenerator(degree);
+    var res=new Array(degree).fill(0);
+    for(var i=0;i<data.length;i++){
+      var factor = data[i] ^ res.shift();
+      res.push(0);
+      for(var j=0;j<degree;j++){
+        res[j] ^= gfMul(gen[j], factor);
+      }
+    }
+    return res;
+  }
+  function BitBuffer(){
+    this.bits=[];
+    this.append=function(val,len){
+      for(var i=len-1;i>=0;i--) this.bits.push((val>>>i)&1);
     };
-    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=84x84&margin=0&data=' + encodeURIComponent(digits);
-  });
+  }
+
+  var bb = new BitBuffer();
+  bb.append(0x1,4);
+  bb.append(digits.length,10);
+  for(var i=0;i<digits.length;){
+    var n = Math.min(3, digits.length-i);
+    var group = parseInt(digits.substr(i,n),10);
+    bb.append(group, n===3 ? 10 : n===2 ? 7 : 4);
+    i += n;
+  }
+
+  var dataCapacityBits = 19 * 8;
+  var terminator = Math.min(4, dataCapacityBits - bb.bits.length);
+  bb.append(0, terminator);
+  while(bb.bits.length % 8 !== 0) bb.bits.push(0);
+
+  var data=[];
+  for(var b=0;b<bb.bits.length;b+=8){
+    var val=0;
+    for(var k=0;k<8;k++) val = (val<<1) | bb.bits[b+k];
+    data.push(val);
+  }
+  var pads=[0xec,0x11], pi=0;
+  while(data.length < 19){
+    data.push(pads[pi%2]);
+    pi++;
+  }
+
+  var ec = rsRemainder(data,7);
+  var codewords = data.concat(ec);
+  var bits=[];
+  for(var ci=0;ci<codewords.length;ci++){
+    for(var bi=7;bi>=0;bi--) bits.push((codewords[ci]>>>bi)&1);
+  }
+
+  var modules=[];
+  var reserved=[];
+  for(var y=0;y<size;y++){
+    modules[y]=new Array(size).fill(false);
+    reserved[y]=new Array(size).fill(false);
+  }
+  function set(x,y,val,res){
+    if(x<0||y<0||x>=size||y>=size) return;
+    modules[y][x]=!!val;
+    if(res) reserved[y][x]=true;
+  }
+  function finder(x,y){
+    for(var dy=-1;dy<=7;dy++){
+      for(var dx=-1;dx<=7;dx++){
+        var xx=x+dx, yy=y+dy;
+        if(xx<0||yy<0||xx>=size||yy>=size) continue;
+        var on = (dx>=0&&dx<=6&&dy>=0&&dy<=6&&(dx===0||dx===6||dy===0||dy===6||(dx>=2&&dx<=4&&dy>=2&&dy<=4)));
+        set(xx,yy,on,true);
+      }
+    }
+  }
+  finder(0,0);
+  finder(size-7,0);
+  finder(0,size-7);
+
+  for(var t=8;t<=size-9;t++){
+    set(t,6,t%2===0,true);
+    set(6,t,t%2===0,true);
+  }
+
+  set(8,13,true,true);
+
+  for(var r=0;r<9;r++){
+    if(r!==6){ reserved[8][r]=true; reserved[r][8]=true; }
+  }
+  for(var f=0;f<8;f++){
+    reserved[8][size-1-f]=true;
+    reserved[size-1-f][8]=true;
+  }
+
+  var bitIndex=0;
+  var upward=true;
+  for(var x=size-1;x>=1;x-=2){
+    if(x===6) x--;
+    for(var yOff=0;yOff<size;yOff++){
+      var y = upward ? size-1-yOff : yOff;
+      for(var dx=0;dx<2;dx++){
+        var xx=x-dx;
+        if(reserved[y][xx]) continue;
+        var bit = bitIndex < bits.length ? bits[bitIndex++] : 0;
+        if(((y+xx)&1)===0) bit ^= 1;
+        set(xx,y,bit,false);
+      }
+    }
+    upward=!upward;
+  }
+
+  // Format information: ECC L, mask 0
+  var format = 0x77c4;
+  var pos1=[[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+  var pos2=[[20,8],[19,8],[18,8],[17,8],[16,8],[15,8],[14,8],[13,8],[8,20],[8,19],[8,18],[8,17],[8,16],[8,15],[8,14]];
+  for(var fi=0;fi<15;fi++){
+    var bitf=(format>>>fi)&1;
+    set(pos1[fi][0],pos1[fi][1],bitf,true);
+    set(pos2[fi][0],pos2[fi][1],bitf,true);
+  }
+
+  clear();
+  ctx.fillStyle="#111";
+  for(var yy=0;yy<size;yy++){
+    for(var xx2=0;xx2<size;xx2++){
+      if(modules[yy][xx2]){
+        ctx.fillRect(xx2*scale, yy*scale, scale, scale);
+      }
+    }
+  }
+  return Promise.resolve();
 }
 
 function updateReport(){
