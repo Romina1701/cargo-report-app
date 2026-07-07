@@ -712,7 +712,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <div class="app">
 <div class="card">
 <h1>📦 入庫報告書フォーム</h1>
-<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。PDFは印刷経由ではなく、A4 1ページのPDFファイルとして直接作成します。</p>
+<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。PDFは印刷経由ではなく、A4 1ページのPDFファイルとして直接作成します。添付ファイル名は文字化け防止のため英数字にしています。</p>
 
 
 
@@ -1038,7 +1038,7 @@ async function showPdfGuide(){
     pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
 
     var inboundNo = v("inboundNo") || "cargo-report";
-    var fileName = "入庫報告書_" + inboundNo + ".pdf";
+    var fileName = "cargo-report_" + inboundNo + ".pdf";
     var blob = pdf.output("blob");
     var file = new File([blob], fileName, { type: "application/pdf" });
 
@@ -1046,7 +1046,7 @@ async function showPdfGuide(){
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         files: [file],
-        title: "入庫報告書",
+        title: "Cargo Report PDF",
         text: "入庫報告書PDF"
       });
     } else {
