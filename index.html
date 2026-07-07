@@ -703,12 +703,16 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 }
 
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
 </head>
 <body>
 <div class="app">
 <div class="card">
 <h1>📦 入庫報告書フォーム</h1>
-<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。</p>
+<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。PDFは印刷経由ではなく、A4 1ページのPDFファイルとして直接作成します。</p>
 
 
 
@@ -763,7 +767,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 
 <div class="action-area">
   <button type="button" class="green" onclick="updateReport()">帳票を更新</button>
-  <button type="button" onclick="showPdfGuide()">PDF保存 / メール送信</button>
+  <button type="button" onclick="showPdfGuide()">PDFを作成 / 共有</button>
   <p class="small">入力が終わったら、ここから会社名なし・A4 1ページ優先版でPDF専用画面を開きます。</p>
 </div>
 </div>
@@ -985,44 +989,87 @@ function compressPhoto(input,no){
  var reader=new FileReader();
  reader.onload=function(e){var img=new Image();img.onload=function(){var max=1200,w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max}if(h>=w&&h>max){w=Math.round(w*max/h);h=max}var c=document.createElement("canvas");c.width=w;c.height=h;var ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);var q=.82,data=c.toDataURL("image/jpeg",q),kb=Math.round(data.length*.75/1024);while(kb>200&&q>.35){q-=.07;data=c.toDataURL("image/jpeg",q);kb=Math.round(data.length*.75/1024)}while(kb>200&&w>500&&h>500){w=Math.round(w*.85);h=Math.round(h*.85);c.width=w;c.height=h;ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);data=c.toDataURL("image/jpeg",.42);kb=Math.round(data.length*.75/1024)}g("photoSlot"+no).innerHTML='<img src="'+data+'">';g("photoStatus"+no).innerText="圧縮後：約"+kb+"KB"};img.src=e.target.result};reader.readAsDataURL(input.files[0]);
 }
-function showPdfGuide(){
+async function showPdfGuide(){
   updateReport();
 
+  if (typeof html2canvas === "undefined" || !window.jspdf) {
+    alert("PDF作成ライブラリを読み込み中です。数秒待ってからもう一度押してください。");
+    return;
+  }
+
   var sheet = document.querySelector(".sheet");
-  if(!sheet){
+  if (!sheet) {
     alert("帳票が見つかりません。");
     return;
   }
 
-  var printHtml = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>入庫報告書PDF</title><style>' +
-  '@page{size:A4 portrait;margin:0;}' +
-  'html,body{margin:0;padding:0;width:210mm;height:297mm;background:#fff;overflow:hidden;font-family:"Yu Gothic",Meiryo,Arial,sans-serif;}' +
-  '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
-  '.sheet{width:190mm!important;height:265mm!important;min-height:0!important;max-height:265mm!important;margin:7mm 10mm 0 10mm!important;padding:2mm 3mm 1.5mm!important;border:.6mm solid #111!important;transform:none!important;scale:1!important;position:relative!important;overflow:hidden!important;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}' +
-  '.header{display:grid;grid-template-columns:58px 1fr 310px;border:2px solid #111;border-bottom:0;height:8mm}.qr{border-right:1px solid #111;display:flex;align-items:center;justify-content:center}.qrbox{width:34px;height:34px;background:linear-gradient(90deg,#111 8px,transparent 8px 12px,#111 12px 16px,transparent 16px),linear-gradient(#111 8px,transparent 8px 12px,#111 12px 16px,transparent 16px);background-size:16px 16px;opacity:.85}.title{display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900}.head-right{border-left:1px solid #111}.head-line{display:grid;grid-template-columns:92px 1fr;height:21px;border-bottom:1px solid #111;font-size:12px;align-items:center}.head-line:last-child{border-bottom:0}.head-label{height:100%;display:flex;align-items:center;justify-content:center;border-right:1px solid #111;background:#eee;font-weight:900}.head-value{text-align:center;padding:0 4px}' +
-  '.logo-row{display:grid;grid-template-columns:1fr 310px;height:5mm;border:2px solid #111;border-bottom:0}.logo{display:flex;align-items:center;font-size:18px;font-weight:900;font-style:italic;padding-left:7px}.logo-side{border-left:1px solid #111}.top-grid{border:2px solid #111;border-bottom:0}.top-row{display:grid;grid-template-columns:1fr 1fr;min-height:8.8mm;border-bottom:1px solid #111}.top-cell{position:relative;display:flex;align-items:end;justify-content:center;padding:16px 6px 4px;font-size:17px;text-align:center}.top-cell:first-child{border-right:1px solid #111}.caption{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:11px;font-weight:900;color:#444}.mawb-row{display:grid;grid-template-columns:1fr 1fr;border:2px solid #111;border-bottom:0;height:7mm}.mawb-cell{display:flex;align-items:end;padding:0 8px 3px;font-size:17px}.mawb-cell:first-child{border-right:1px solid #111}.mawb-label{font-family:serif;font-size:17px;font-weight:700}' +
-  'table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;font-size:12px}.detail-table th,.detail-table td{border:1px solid #111;text-align:center;height:4.4mm;padding:1px;font-size:10px}.detail-table th{background:#e7e7e7;font-weight:900}.detail-table .remarks{text-align:left;padding-left:5px}.detail-table .shape{font-size:10px}.total{display:grid;grid-template-columns:160px 1fr 160px 1fr;border:2px solid #111;border-top:0;height:8.5mm;font-size:25px}.total div{display:flex;align-items:center;justify-content:center;border-right:1px solid #111}.total div:nth-child(1),.total div:nth-child(3){background:#eee;font-weight:900}.total div:last-child{border-right:0}' +
-  '.photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;height:70mm;border-left:2px solid #111;border-right:2px solid #111;border-bottom:2px solid #111}.photo-slot{border-right:1px solid #111;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;position:relative}.photo-slot:nth-child(3),.photo-slot:nth-child(6){border-right:0}.photo-slot:nth-child(n+4){border-bottom:0}.photo-slot img{width:100%;height:100%;object-fit:cover}.photo-name{position:absolute;top:8px;left:10px;font-size:28px;color:#333}.blank-space{display:none;height:0;border-left:2px solid #111;border-right:2px solid #111}.footer{position:absolute;left:3mm;right:3mm;bottom:1.5mm;height:0}.barcode-svg{display:block;width:100%;height:5mm}.barcode-text{font-family:monospace;font-size:7px;letter-spacing:2px;text-align:left;margin-left:8px;line-height:1.1}.company{position:absolute;right:0;bottom:0;font-size:8px}' +
-  '@media print{html,body{margin:0!important;padding:0!important;width:210mm!important;height:297mm!important;overflow:hidden!important}.sheet{width:210mm!important;height:297mm!important;}}' +
-  '</style></head><body>' + sheet.outerHTML + '</body></html>';
+  var originalTransform = sheet.style.transform;
+  var originalMargin = sheet.style.margin;
+  var originalWidth = sheet.style.width;
+  var originalHeight = sheet.style.height;
 
-  var w = window.open("", "_blank");
-  if(!w){
-    alert("PDF専用画面を開けませんでした。Safariのポップアップ許可を確認してください。");
-    return;
-  }
-  w.document.open();
-  w.document.write(printHtml);
-  w.document.close();
+  try {
+    // 画面用の縮小を解除して、帳票をA4比率で画像化する
+    sheet.style.transform = "none";
+    sheet.style.margin = "0";
+    sheet.style.width = "794px";
+    sheet.style.height = "1123px";
 
-  setTimeout(function(){
-    try{
-      w.focus();
-      w.print();
-    }catch(e){
-      alert("PDF専用画面を開きました。右上の共有または印刷からPDF保存してください。");
+    var canvas = await html2canvas(sheet, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      windowWidth: 900,
+      windowHeight: 1300
+    });
+
+    var imgData = canvas.toDataURL("image/jpeg", 0.92);
+    var jsPDF = window.jspdf.jsPDF;
+    var pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true
+    });
+
+    // A4 1ページに画像として配置
+    pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
+
+    var inboundNo = v("inboundNo") || "cargo-report";
+    var fileName = "入庫報告書_" + inboundNo + ".pdf";
+    var blob = pdf.output("blob");
+    var file = new File([blob], fileName, { type: "application/pdf" });
+
+    // iPhoneでは共有シートを優先
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "入庫報告書",
+        text: "入庫報告書PDF"
+      });
+    } else {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){
+        window.open(url, "_blank");
+      }, 300);
     }
-  }, 700);
+  } catch (e) {
+    alert("PDF作成に失敗しました。写真枚数を減らすか、画像サイズを小さくして再試行してください。");
+    console.error(e);
+  } finally {
+    sheet.style.transform = originalTransform;
+    sheet.style.margin = originalMargin;
+    sheet.style.width = originalWidth;
+    sheet.style.height = originalHeight;
+  }
 }
 window.onload=function(){
  currentDate=new Date();
