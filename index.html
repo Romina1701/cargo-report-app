@@ -302,6 +302,127 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
   font-size: 18px !important;
 }
 
+
+/* ===== iPhone PDF 1ページ安全版 ===== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .sheet,
+  .sheet * {
+    visibility: visible !important;
+  }
+
+  .sheet-wrap {
+    display: block !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+
+  .sheet {
+    position: fixed !important;
+    left: 7mm !important;
+    top: 7mm !important;
+    width: 196mm !important;
+    height: 283mm !important;
+    min-height: 0 !important;
+    max-height: 283mm !important;
+    margin: 0 !important;
+    padding: 2.5mm 3mm 2.5mm !important;
+    border: 0.7mm solid #111 !important;
+    transform: none !important;
+    scale: 1 !important;
+    overflow: hidden !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-before: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .header { height: 11mm !important; }
+  .logo-row { height: 6.5mm !important; }
+  .top-row { min-height: 10mm !important; }
+  .mawb-row { height: 8mm !important; }
+
+  .detail-table {
+    font-size: 10px !important;
+  }
+
+  .detail-table th,
+  .detail-table td {
+    height: 5.2mm !important;
+    font-size: 9px !important;
+    line-height: 1.05 !important;
+  }
+
+  .total {
+    height: 10mm !important;
+    font-size: 20px !important;
+  }
+
+  .photo-grid {
+    height: 88mm !important;
+  }
+
+  .photo-name {
+    font-size: 20px !important;
+  }
+
+  .blank-space {
+    height: 13mm !important;
+  }
+
+  .footer {
+    position: absolute !important;
+    left: 3mm !important;
+    right: 3mm !important;
+    bottom: 1.5mm !important;
+    height: 13mm !important;
+    overflow: hidden !important;
+  }
+
+  .barcode-svg {
+    height: 7mm !important;
+  }
+
+  .barcode-text {
+    font-size: 10px !important;
+    line-height: 1 !important;
+    letter-spacing: 3px !important;
+  }
+
+  .company {
+    font-size: 10px !important;
+    bottom: 0 !important;
+  }
+
+  .card {
+    display: none !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -364,7 +485,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <div class="action-area">
   <button type="button" class="green" onclick="updateReport()">帳票を更新</button>
   <button type="button" onclick="showPdfGuide()">PDF保存 / メール送信</button>
-  <p class="small">入力が終わったら、ここからPDF専用画面を開いてA4 1ページで保存します。</p>
+  <p class="small">入力が終わったら、ここからA4 1ページ安全版でPDF専用画面を開きます。</p>
 </div>
 </div>
 
@@ -598,11 +719,11 @@ function showPdfGuide(){
   '@page{size:A4 portrait;margin:0;}' +
   'html,body{margin:0;padding:0;width:210mm;height:297mm;background:#fff;overflow:hidden;font-family:"Yu Gothic",Meiryo,Arial,sans-serif;}' +
   '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
-  '.sheet{width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;margin:0!important;padding:3mm 4mm 3mm!important;border:1mm solid #111!important;transform:none!important;scale:1!important;position:relative!important;overflow:hidden!important;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}' +
+  '.sheet{width:196mm!important;height:283mm!important;min-height:0!important;max-height:283mm!important;margin:7mm!important;padding:2.5mm 3mm 2.5mm!important;border:.7mm solid #111!important;transform:none!important;scale:1!important;position:relative!important;overflow:hidden!important;page-break-after:avoid!important;page-break-before:avoid!important;page-break-inside:avoid!important;}' +
   '.header{display:grid;grid-template-columns:58px 1fr 310px;border:2px solid #111;border-bottom:0;height:12mm}.qr{border-right:1px solid #111;display:flex;align-items:center;justify-content:center}.qrbox{width:34px;height:34px;background:linear-gradient(90deg,#111 8px,transparent 8px 12px,#111 12px 16px,transparent 16px),linear-gradient(#111 8px,transparent 8px 12px,#111 12px 16px,transparent 16px);background-size:16px 16px;opacity:.85}.title{display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900}.head-right{border-left:1px solid #111}.head-line{display:grid;grid-template-columns:92px 1fr;height:21px;border-bottom:1px solid #111;font-size:12px;align-items:center}.head-line:last-child{border-bottom:0}.head-label{height:100%;display:flex;align-items:center;justify-content:center;border-right:1px solid #111;background:#eee;font-weight:900}.head-value{text-align:center;padding:0 4px}' +
   '.logo-row{display:grid;grid-template-columns:1fr 310px;height:7mm;border:2px solid #111;border-bottom:0}.logo{display:flex;align-items:center;font-size:18px;font-weight:900;font-style:italic;padding-left:7px}.logo-side{border-left:1px solid #111}.top-grid{border:2px solid #111;border-bottom:0}.top-row{display:grid;grid-template-columns:1fr 1fr;min-height:10.5mm;border-bottom:1px solid #111}.top-cell{position:relative;display:flex;align-items:end;justify-content:center;padding:16px 6px 4px;font-size:17px;text-align:center}.top-cell:first-child{border-right:1px solid #111}.caption{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:11px;font-weight:900;color:#444}.mawb-row{display:grid;grid-template-columns:1fr 1fr;border:2px solid #111;border-bottom:0;height:8.5mm}.mawb-cell{display:flex;align-items:end;padding:0 8px 3px;font-size:17px}.mawb-cell:first-child{border-right:1px solid #111}.mawb-label{font-family:serif;font-size:17px;font-weight:700}' +
   'table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;font-size:12px}.detail-table th,.detail-table td{border:1px solid #111;text-align:center;height:5.8mm;padding:1px;font-size:10px}.detail-table th{background:#e7e7e7;font-weight:900}.detail-table .remarks{text-align:left;padding-left:5px}.detail-table .shape{font-size:10px}.total{display:grid;grid-template-columns:160px 1fr 160px 1fr;border:2px solid #111;border-top:0;height:11mm;font-size:25px}.total div{display:flex;align-items:center;justify-content:center;border-right:1px solid #111}.total div:nth-child(1),.total div:nth-child(3){background:#eee;font-weight:900}.total div:last-child{border-right:0}' +
-  '.photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;height:96mm;border-left:2px solid #111;border-right:2px solid #111;border-bottom:2px solid #111}.photo-slot{border-right:1px solid #111;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;position:relative}.photo-slot:nth-child(3),.photo-slot:nth-child(6){border-right:0}.photo-slot:nth-child(n+4){border-bottom:0}.photo-slot img{width:100%;height:100%;object-fit:cover}.photo-name{position:absolute;top:8px;left:10px;font-size:28px;color:#333}.blank-space{height:25mm;border-left:2px solid #111;border-right:2px solid #111}.footer{position:absolute;left:4mm;right:4mm;bottom:2mm;height:15mm}.barcode-svg{display:block;width:100%;height:8mm}.barcode-text{font-family:monospace;font-size:14px;letter-spacing:4px;text-align:left;margin-left:8px;line-height:1.1}.company{position:absolute;right:0;bottom:0;font-size:13px}' +
+  '.photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;height:88mm;border-left:2px solid #111;border-right:2px solid #111;border-bottom:2px solid #111}.photo-slot{border-right:1px solid #111;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;position:relative}.photo-slot:nth-child(3),.photo-slot:nth-child(6){border-right:0}.photo-slot:nth-child(n+4){border-bottom:0}.photo-slot img{width:100%;height:100%;object-fit:cover}.photo-name{position:absolute;top:8px;left:10px;font-size:28px;color:#333}.blank-space{height:13mm;border-left:2px solid #111;border-right:2px solid #111}.footer{position:absolute;left:3mm;right:3mm;bottom:1.5mm;height:13mm}.barcode-svg{display:block;width:100%;height:7mm}.barcode-text{font-family:monospace;font-size:14px;letter-spacing:4px;text-align:left;margin-left:8px;line-height:1.1}.company{position:absolute;right:0;bottom:0;font-size:13px}' +
   '@media print{html,body{margin:0!important;padding:0!important;width:210mm!important;height:297mm!important;overflow:hidden!important}.sheet{width:210mm!important;height:297mm!important;}}' +
   '</style></head><body>' + sheet.outerHTML + '</body></html>';
 
