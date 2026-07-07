@@ -23,7 +23,7 @@ button.dark{background:#111}button.green{background:#16803c}button.red{backgroun
 .sheet-wrap{background:#fff;padding:12px;overflow:auto}
 .sheet{width:794px;height:1123px;margin:0 auto;background:#fff;border:2px solid #111;padding:10px 14px 8px;font-family:"Yu Gothic",Meiryo,Arial,sans-serif;position:relative;overflow:hidden}
 .header{display:grid;grid-template-columns:58px 1fr 310px;border:2px solid #111;border-bottom:0;height:44px}
-.qr{border-right:1px solid #111;display:flex;align-items:center;justify-content:center}.qr canvas{width:34px;height:34px;display:block}
+.qr{border-right:1px solid #111;display:flex;align-items:center;justify-content:center}.qr img{width:34px;height:34px;display:block;image-rendering:pixelated;background:#fff}
 .title{display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900}.head-right{border-left:1px solid #111}.head-line{display:grid;grid-template-columns:92px 1fr;height:21px;border-bottom:1px solid #111;font-size:12px;align-items:center}.head-line:last-child{border-bottom:0}.head-label{height:100%;display:flex;align-items:center;justify-content:center;border-right:1px solid #111;background:#eee;font-weight:900}.head-value{text-align:center;padding:0 4px}
 .logo-row{display:grid;grid-template-columns:1fr 310px;height:24px;border:2px solid #111;border-bottom:0}.logo{display:flex;align-items:center;font-size:18px;font-weight:900;font-style:italic;padding-left:7px}.logo-side{border-left:1px solid #111}
 .top-grid{border:2px solid #111;border-bottom:0}.top-row{display:grid;grid-template-columns:1fr 1fr;min-height:38px;border-bottom:1px solid #111}.top-cell{position:relative;display:flex;align-items:end;justify-content:center;padding:16px 6px 4px;font-size:17px;text-align:center}.top-cell:first-child{border-right:1px solid #111}.caption{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:11px;font-weight:900;color:#444}
@@ -704,10 +704,11 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 
 
 /* ===== バーコード長さ・2次元バーコード調整 ===== */
-.qr canvas {
+.qr img {
   width: 34px !important;
   height: 34px !important;
   image-rendering: pixelated;
+  background:#fff;
 }
 
 .barcode-svg {
@@ -721,7 +722,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
     max-width: 45mm !important;
   }
 
-  .qr canvas {
+  .qr img {
     width: 8mm !important;
     height: 8mm !important;
   }
@@ -732,7 +733,6 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -801,7 +801,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <div class="sheet-wrap">
 <div class="sheet">
 <div class="header">
-<div class="qr"><canvas id="qrCanvas" width="42" height="42"></canvas></div>
+<div class="qr"><img id="qrImg" alt="QR" referrerpolicy="no-referrer" crossorigin="anonymous"></div>
 <div class="title">入庫報告書</div>
 <div class="head-right">
 <div class="head-line"><div class="head-label">作成日時</div><div class="head-value" id="outCreatedAt"></div></div>
@@ -1002,34 +1002,21 @@ function renderBarcodeDigits(digits){
 }
 
 function renderQrDigits(digits){
-  var canvas = g("qrCanvas");
-  if(!canvas) return Promise.resolve();
+  var img = g("qrImg");
+  if(!img) return Promise.resolve();
   if(!digits){
-    var ctx = canvas.getContext("2d");
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    return Promise.resolve();
-  }
-  if(typeof QRCode === "undefined"){
-    var ctx2 = canvas.getContext("2d");
-    ctx2.fillStyle = "#fff";
-    ctx2.fillRect(0,0,canvas.width,canvas.height);
-    ctx2.fillStyle = "#111";
-    ctx2.font = "8px sans-serif";
-    ctx2.fillText(digits.slice(-6), 2, 22);
+    img.removeAttribute("src");
     return Promise.resolve();
   }
   return new Promise(function(resolve){
-    QRCode.toCanvas(canvas, digits, {
-      width: 42,
-      margin: 0,
-      errorCorrectionLevel: "M",
-      color: {
-        dark: "#111111",
-        light: "#ffffff"
-      }
-    }, function(){
+    img.onload = function(){ resolve(); };
+    img.onerror = function(){
+      // 取得失敗時は簡易表示
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="84" height="84"><rect width="84" height="84" fill="white"/><rect x="2" y="2" width="80" height="80" fill="white" stroke="black" stroke-width="2"/><text x="42" y="46" font-size="14" text-anchor="middle" fill="black">'+digits.slice(-6)+'</text></svg>';
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
       resolve();
-    });
+    };
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=84x84&margin=0&data=' + encodeURIComponent(digits);
   });
 }
 
