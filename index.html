@@ -1323,6 +1323,38 @@ input[id^="no"] {
   }
 }
 
+
+/* ===== 明細反映・X-RAY結果・初期表示の補強 ===== */
+.xray-result {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.detail-table .cargo-no,
+.detail-table td:nth-child(1) {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  font-size: 12px !important;
+  letter-spacing: -0.35px !important;
+}
+
+.detail-table .remarks,
+.detail-table td:nth-child(7) {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+.detail-table .shape,
+.detail-table td:nth-child(8) {
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1358,7 +1390,18 @@ input[id^="no"] {
 </div>
 
 <div class="row">
-<div><label>Shipper / お客様名</label><input id="shipper" placeholder="お客様名" oninput="updateReport()"></div>
+<div>
+<div>
+<label>X-RAY結果</label>
+<select id="xrayResult" onchange="updateReport()">
+  <option value="">選択してください</option>
+  <option value="OK">OK</option>
+  <option value="NG">NG</option>
+  <option value="未実施">未実施</option>
+</select>
+</div>
+
+<label>Shipper / お客様名</label><input id="shipper" placeholder="お客様名" oninput="updateReport()"></div>
 <div><label>X-RAY表示</label><input id="xrayAtText" readonly></div>
 </div>
 
@@ -1370,7 +1413,7 @@ input[id^="no"] {
 <h2>貨物明細</h2>
 <p class="note">No.は必要な場合のみ入力できます。No.は数字とハイフン「-」を入力できます。L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。重量欄はその行の総重量として入力します。合計重量は各行の重量を足して自動計算します。</p>
 <div id="items"></div>
-<button type="button" class="dark" onclick="addItem('','','','','','','','カートン')">明細行を追加</button>
+<button type="button" class="dark" onclick="addItem('','','','','','','カートン','')">明細行を追加</button>
 
 <h2>写真 6枚</h2>
 <p class="note">各写真は選択時に200KB以下を目標に圧縮します。</p>
@@ -1412,7 +1455,7 @@ input[id^="no"] {
 <div class="top-grid">
 <div class="top-row">
 <div class="top-cell"><div class="caption">代理店名</div><span id="outAgent"></span></div>
-<div class="top-cell"><div class="caption">X線検査日時</div><span id="outXrayAt"></span></div>
+<div class="top-cell"><div class="caption">X線検査日時</div><span id="outXrayAt"></span><br><span id="outXrayResult" class="xray-result"></span></div>
 </div>
 <div class="top-row">
 <div class="top-cell"><div class="caption">Shipper</div><span id="outShipper"></span></div>
@@ -1426,7 +1469,7 @@ input[id^="no"] {
 </div>
 
 <table class="detail-table">
-<thead><tr><th style="width:6%">No</th><th style="width:9%">L</th><th style="width:9%">W</th><th style="width:9%">H</th><th style="width:9%">個数</th><th style="width:10%">重量</th><th>備考</th><th style="width:15%">貨物形状</th></tr></thead>
+<thead><tr><th style="width:10%">No</th><th style="width:8%">L</th><th style="width:8%">W</th><th style="width:8%">H</th><th style="width:8%">個数</th><th style="width:10%">重量</th><th style="width:24%">備考</th><th style="width:24%">貨物形状</th></tr></thead>
 <tbody id="outRows"></tbody>
 </table>
 
@@ -1553,16 +1596,17 @@ function updateXrayText(){
 }
 
 
+
 function sanitizeDigitsInput(el){
   if(!el) return;
   var before = el.value || "";
   var cleaned = before.replace(/[^0-9-]/g, "");
-  // ハイフンの連続だけ軽く整理
   cleaned = cleaned.replace(/--+/g, "-");
   if(before !== cleaned){
     el.value = cleaned;
   }
 }
+
 
 function sanitizeDecimalInput(el){
   if(!el) return;
@@ -1577,9 +1621,9 @@ function sanitizeDecimalInput(el){
   }
 }
 
-function addItem(no,w,l,h,pieces,weight,remarks,shape){
+function addItem(no,l,w,h,pieces,weight,shape,remarks){
  itemCount++;
- no=no||""; w=w||""; l=l||""; h=h||""; pieces=pieces||""; weight=weight||""; remarks=remarks||""; shape=shape||"カートン";
+ no=no||""; l=l||""; w=w||""; h=h||""; pieces=pieces||""; weight=weight||""; shape=shape||"カートン"; remarks=remarks||"";
 
  var box=document.createElement("div");
  box.className="item";
@@ -1594,7 +1638,7 @@ function addItem(no,w,l,h,pieces,weight,remarks,shape){
  box.innerHTML =
  '<div class="item-title"><strong>明細 '+itemCount+'</strong><button type="button" class="danger" onclick="removeItem('+itemCount+')">削除</button></div>'
  + '<div class="row4">'
- + '<div><label>No.</label><input id="no'+itemCount+'" type="text" inputmode="text" pattern="[0-9-]*" value="'+(no||"")+'" oninput="sanitizeDigitsInput(this);updateReport()"></div>'
+ + '<div><label>No.</label><input id="no'+itemCount+'" type="text" inputmode="text" pattern="[0-9-]*" value="'+no+'" oninput="sanitizeDigitsInput(this);updateReport()"></div>'
  + '<div><label>L</label><input id="l'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+l+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
  + '<div><label>W</label><input id="w'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+w+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
  + '<div><label>H</label><input id="h'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+h+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
@@ -1695,6 +1739,10 @@ function updateReport(){
  g("outStaff").innerText=v("staff");
  g("outAgent").innerText=a.name||"";
  g("outXrayAt").innerText=v("xrayAtText");
+ if(g("outXrayResult")){
+   var xr=v("xrayResult");
+   g("outXrayResult").innerText = xr ? "X-RAY結果：" + xr : "";
+ }
  g("outShipper").innerText=v("shipper");
  g("outInboundNo").innerText=v("inboundNo");
  g("outMawb").innerText=v("mawb");
@@ -1715,10 +1763,10 @@ function updateReport(){
   var h=v("h"+id);
   var pText=v("p"+id);
   var kgText=v("kg"+id);
-  var remarks=v("remarks"+id);
   var shape=v("shape"+id);
+  var remarks=v("remarks"+id);
 
-  var hasData = no || l || w || h || pText || kgText || remarks || shape;
+  var hasData = no || l || w || h || pText || kgText || shape || remarks;
   if(!hasData) return;
 
   var p = Number((pText||"0").replace(/[^0-9.]/g,"")) || 0;
@@ -1733,7 +1781,7 @@ function updateReport(){
     + "<td>"+w+"</td>"
     + "<td>"+h+"</td>"
     + "<td>"+(pText ? pText+"個" : "")+"</td>"
-    + "<td>"+(kgText ? Number(kgText).toFixed(1)+"Kg" : "")+"</td>"
+    + "<td>"+(kgText ? kg.toFixed(1)+"Kg" : "")+"</td>"
     + "<td class=\"remarks\">"+remarks+"</td>"
     + "<td class=\"shape\">"+shape+"</td>"
     + "</tr>";
@@ -1744,7 +1792,7 @@ function updateReport(){
   rows += '<tr><td class="cargo-no"></td><td></td><td></td><td></td><td></td><td></td><td class="remarks"></td><td class="shape"></td></tr>';
  }
 
- g("detailRows").innerHTML=rows;
+ if(g("detailRows")) g("detailRows").innerHTML=rows;
  g("outTotalPieces").innerText=totalPieces+"個";
  g("outTotalKg").innerText=totalKg.toFixed(1)+"Kg";
 
@@ -1844,16 +1892,13 @@ async function showPdfGuide(){
   }
 }
 window.onload=function(){
- currentDate=new Date();
- g("createdAtText").value=makeDateText(currentDate);
- setupTimeSelects();
- g("xrayDate").value=formatDateForInput(currentDate);
- g("xrayHour").value=pad(currentDate.getHours());
- g("xrayMinute").value=pad(currentDate.getMinutes());
- setupAgents();
- updateXrayText();
- addItem("","","","","","","","カートン");
- updateReport();
+  setupAgents();
+  setupTime();
+  setNow();
+  if(g("items") && document.querySelectorAll("#items .item").length===0){
+    addItem("","","","","","","カートン","");
+  }
+  updateReport();
 };
 </script>
 </body>
