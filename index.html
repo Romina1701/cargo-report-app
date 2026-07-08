@@ -1355,6 +1355,38 @@ input[id^="no"] {
   overflow-wrap: normal !important;
 }
 
+
+/* ===== 全体点検後の補強 ===== */
+.xray-result {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.detail-table .cargo-no,
+.detail-table td:nth-child(1) {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  font-size: 12px !important;
+  letter-spacing: -0.35px !important;
+}
+
+.detail-table .remarks,
+.detail-table td:nth-child(7) {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+.detail-table .shape,
+.detail-table td:nth-child(8) {
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1623,7 +1655,14 @@ function sanitizeDecimalInput(el){
 
 function addItem(no,l,w,h,pieces,weight,shape,remarks){
  itemCount++;
- no=no||""; l=l||""; w=w||""; h=h||""; pieces=pieces||""; weight=weight||""; shape=shape||"カートン"; remarks=remarks||"";
+ no=no||"";
+ l=l||"";
+ w=w||"";
+ h=h||"";
+ pieces=pieces||"";
+ weight=weight||"";
+ shape=shape||"カートン";
+ remarks=remarks||"";
 
  var box=document.createElement("div");
  box.className="item";
@@ -1653,7 +1692,14 @@ function addItem(no,l,w,h,pieces,weight,shape,remarks){
  g("items").appendChild(box);
  updateReport();
 }
-function deleteItem(no){var el=g("itemCard"+no);if(el)el.remove();updateReport()}
+
+function removeItem(no){
+ var el=g("item"+no);
+ if(el) el.remove();
+ updateReport();
+}
+
+function deleteItem(no){removeItem(no)}
 function getActiveItemNos(){var cards=document.querySelectorAll(".item-card"),nos=[];for(var i=0;i<cards.length;i++)nos.push(Number(cards[i].getAttribute("data-item-no")));return nos}
 
 var CODE128_PATTERNS=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
@@ -1735,18 +1781,20 @@ function renderQrDigits(digits){
 function updateReport(){
  var a=selectedAgent();
 
- g("outCreatedAt").innerText=v("createdAtText");
- g("outStaff").innerText=v("staff");
- g("outAgent").innerText=a.name||"";
- g("outXrayAt").innerText=v("xrayAtText");
+ if(g("outCreatedAt")) g("outCreatedAt").innerText=v("createdAtText");
+ if(g("outStaff")) g("outStaff").innerText=v("staff");
+ if(g("outAgent")) g("outAgent").innerText=a.name||"";
+ if(g("outXrayAt")) g("outXrayAt").innerText=v("xrayAtText");
+
  if(g("outXrayResult")){
    var xr=v("xrayResult");
    g("outXrayResult").innerText = xr ? "X-RAY結果：" + xr : "";
  }
- g("outShipper").innerText=v("shipper");
- g("outInboundNo").innerText=v("inboundNo");
- g("outMawb").innerText=v("mawb");
- g("outHawb").innerText=v("hawb");
+
+ if(g("outShipper")) g("outShipper").innerText=v("shipper");
+ if(g("outInboundNo")) g("outInboundNo").innerText=v("inboundNo");
+ if(g("outMawb")) g("outMawb").innerText=v("mawb");
+ if(g("outHawb")) g("outHawb").innerText=v("hawb");
 
  var totalPieces=0;
  var totalKg=0;
@@ -1766,7 +1814,7 @@ function updateReport(){
   var shape=v("shape"+id);
   var remarks=v("remarks"+id);
 
-  var hasData = no || l || w || h || pText || kgText || shape || remarks;
+  var hasData = no || l || w || h || pText || kgText || remarks;
   if(!hasData) return;
 
   var p = Number((pText||"0").replace(/[^0-9.]/g,"")) || 0;
@@ -1792,12 +1840,12 @@ function updateReport(){
   rows += '<tr><td class="cargo-no"></td><td></td><td></td><td></td><td></td><td></td><td class="remarks"></td><td class="shape"></td></tr>';
  }
 
- if(g("detailRows")) g("detailRows").innerHTML=rows;
- g("outTotalPieces").innerText=totalPieces+"個";
- g("outTotalKg").innerText=totalKg.toFixed(1)+"Kg";
+ if(g("outRows")) g("outRows").innerHTML=rows;
+ if(g("outTotalPieces")) g("outTotalPieces").innerText=totalPieces+"個";
+ if(g("outTotalWeight")) g("outTotalWeight").innerText=totalKg.toFixed(1)+"Kg";
 
  var barcodeDigits=extractBarcodeDigits(v("inboundNo"));
- g("outBarcode").innerText=barcodeDigits;
+ if(g("outBarcode")) g("outBarcode").innerText=barcodeDigits;
  renderBarcodeDigits(barcodeDigits);
  renderQrDigits(barcodeDigits);
 }
@@ -1892,13 +1940,26 @@ async function showPdfGuide(){
   }
 }
 window.onload=function(){
-  setupAgents();
-  setupTime();
-  setNow();
-  if(g("items") && document.querySelectorAll("#items .item").length===0){
-    addItem("","","","","","","カートン","");
-  }
-  updateReport();
+ currentDate=new Date();
+
+ if(g("createdAtText")){
+   g("createdAtText").value=makeDateText(currentDate);
+ }
+
+ setupTimeSelects();
+
+ if(g("xrayDate")) g("xrayDate").value=formatDateForInput(currentDate);
+ if(g("xrayHour")) g("xrayHour").value=pad(currentDate.getHours());
+ if(g("xrayMinute")) g("xrayMinute").value=pad(currentDate.getMinutes());
+
+ setupAgents();
+ updateXrayText();
+
+ if(g("items") && document.querySelectorAll("#items .item").length===0){
+   addItem("","","","","","","カートン","");
+ }
+
+ updateReport();
 };
 </script>
 </body>
