@@ -1110,6 +1110,60 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
   }
 }
 
+
+/* ===== タイトル・入庫担当者名をさらに大きく ===== */
+.title {
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1px !important;
+}
+
+/* 右上の値欄全体 */
+.head-value {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+/* 入庫担当者の名前だけさらに大きく */
+.head-line:nth-child(2) .head-value,
+#outStaff {
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  letter-spacing: .5px !important;
+}
+
+/* 作成日時は少しだけ大きく、担当者名より控えめ */
+.head-line:nth-child(1) .head-value,
+#outCreatedAt {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+@media print {
+  .title {
+    font-size: 28px !important;
+    font-weight: 900 !important;
+    letter-spacing: .8px !important;
+  }
+
+  .head-value {
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+
+  .head-line:nth-child(2) .head-value,
+  #outStaff {
+    font-size: 16px !important;
+    font-weight: 900 !important;
+  }
+
+  .head-line:nth-child(1) .head-value,
+  #outCreatedAt {
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
