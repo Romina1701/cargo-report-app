@@ -1164,79 +1164,6 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
   }
 }
 
-
-/* ===== No.手入力対応・列幅再配分 ===== */
-.detail-table th:nth-child(1),
-.detail-table td:nth-child(1) { width: 12% !important; }
-
-.detail-table th:nth-child(2),
-.detail-table td:nth-child(2),
-.detail-table th:nth-child(3),
-.detail-table td:nth-child(3),
-.detail-table th:nth-child(4),
-.detail-table td:nth-child(4),
-.detail-table th:nth-child(5),
-.detail-table td:nth-child(5) { width: 8% !important; }
-
-.detail-table th:nth-child(6),
-.detail-table td:nth-child(6) { width: 10% !important; }
-
-.detail-table th:nth-child(7),
-.detail-table td:nth-child(7) { width: 22% !important; }
-
-.detail-table th:nth-child(8),
-.detail-table td:nth-child(8) { width: 24% !important; }
-
-.detail-table .cargo-no,
-.detail-table td:nth-child(1) {
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
-  font-size: 12.5px !important;
-  letter-spacing: -0.4px !important;
-  padding-left: 1px !important;
-  padding-right: 1px !important;
-}
-
-.detail-table .remarks,
-.detail-table td:nth-child(7) {
-  white-space: normal !important;
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
-  font-size: 11.5px !important;
-  line-height: 1.05 !important;
-}
-
-.detail-table .shape,
-.detail-table td:nth-child(8) {
-  font-size: 11.8px !important;
-  line-height: 1.05 !important;
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
-  letter-spacing: -0.4px !important;
-}
-
-input[id^="no"] { font-weight: 700; }
-
-@media print {
-  .detail-table .cargo-no,
-  .detail-table td:nth-child(1) {
-    white-space: nowrap !important;
-    font-size: 12.5px !important;
-    letter-spacing: -0.4px !important;
-  }
-  .detail-table .remarks,
-  .detail-table td:nth-child(7) {
-    font-size: 11.5px !important;
-    line-height: 1.05 !important;
-  }
-  .detail-table .shape,
-  .detail-table td:nth-child(8) {
-    font-size: 11.8px !important;
-    line-height: 1.05 !important;
-  }
-}
-
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1282,7 +1209,7 @@ input[id^="no"] { font-weight: 700; }
 </div>
 
 <h2>貨物明細</h2>
-<p class="note">No.は手入力できます。L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。重量欄はその行の総重量として入力します。合計重量は各行の重量を足して自動計算します。</p>
+<p class="note">L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。重量欄はその行の総重量として入力します。合計重量は各行の重量を足して自動計算します。</p>
 <div id="items"></div>
 <button type="button" class="dark" onclick="addItem()">明細行を追加</button>
 
@@ -1479,14 +1406,13 @@ function sanitizeDecimalInput(el){
   }
 }
 
-function addItem(no,w,l,h,pieces,weight,remarks,shape){
+function addItem(w,l,h,pieces,weight,remarks,shape){
  itemCount++;
  var s='<select id="shape'+itemCount+'" onchange="updateReport()">';
  for(var i=0;i<shapeOptions.length;i++){var se=(shapeOptions[i]==(shape||""))?" selected":"";s+='<option'+se+'>'+shapeOptions[i]+'</option>'}
  s+='</select>';
  var box=document.createElement("div");box.className="item-card";box.id="itemCard"+itemCount;box.setAttribute("data-item-no",itemCount);
- box.innerHTML='<div class="item-head"><strong>明細 '+itemCount+'</strong><button type="button" class="red" onclick="deleteItem('+itemCount+')">削除</button></div><div class="row4">
-<div><label>No.</label><input id="no'+itemCount+'" type="text" inputmode="text" value="'+(no||"")+'" oninput="updateReport()" placeholder="例 5001-5014"></div><div><label>L</label><input id="l'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(l||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>W</label><input id="w'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(w||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>H</label><input id="h'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(h||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>個数</label><input id="p'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(pieces||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div></div><div class="row"><div><label>重量kg</label><input id="kg'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(weight||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>貨物形状</label>'+s+'</div></div><label>備考</label><input id="r'+itemCount+'" value="'+(remarks||"")+'" oninput="updateReport()">';
+ box.innerHTML='<div class="item-head"><strong>明細 '+itemCount+'</strong><button type="button" class="red" onclick="deleteItem('+itemCount+')">削除</button></div><div class="row4"><div><label>L</label><input id="l'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(l||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>W</label><input id="w'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(w||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>H</label><input id="h'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(h||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>個数</label><input id="p'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(pieces||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div></div><div class="row"><div><label>重量kg</label><input id="kg'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(weight||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>貨物形状</label>'+s+'</div></div><label>備考</label><input id="r'+itemCount+'" value="'+(remarks||"")+'" oninput="updateReport()">';
  g("items").appendChild(box);updateReport();
 }
 function deleteItem(no){var el=g("itemCard"+no);if(el)el.remove();updateReport()}
@@ -1573,7 +1499,7 @@ function updateReport(){
  g("outCreatedAt").innerText=v("createdAtText");g("outStaff").innerText=v("staff");g("outAgent").innerText=a.name;g("outXrayAt").innerText=v("xrayAtText");g("outShipper").innerText=v("shipper");g("outInboundNo").innerText=v("inboundNo");g("outMawb").innerText=v("mawb");g("outHawb").innerText=v("hawb");var barcodeDigits=extractBarcodeDigits(v("inboundNo"));g("outBarcode").innerText=barcodeDigits;renderBarcodeDigits(barcodeDigits);renderQrDigits(barcodeDigits);renderQrDigits(barcodeDigits);
  var rows="",tp=0,tw=0,nos=getActiveItemNos();
  for(var i=0;i<12;i++){
-  if(i<nos.length){var n=nos[i],p=Number(v("p"+n)||0),kg=Number(v("kg"+n)||0);tp+=p;tw+=kg;rows+="<tr><td class=\"cargo-no\">"+(v("no"+n)||"")+"</td><td>"+v("l"+n)+"</td><td>"+v("w"+n)+"</td><td>"+v("h"+n)+"</td><td>"+(v("p"+n)?v("p"+n)+"個":"")+"</td><td>"+(v("kg"+n)?v("kg"+n)+"Kg":"")+"</td><td class='remarks'>"+v("r"+n)+"</td><td class='shape'>"+v("shape"+n)+"</td></tr>";}
+  if(i<nos.length){var n=nos[i],p=Number(v("p"+n)||0),kg=Number(v("kg"+n)||0);tp+=p;tw+=kg;rows+="<tr><td>"+(i+1)+"</td><td>"+v("l"+n)+"</td><td>"+v("w"+n)+"</td><td>"+v("h"+n)+"</td><td>"+(v("p"+n)?v("p"+n)+"個":"")+"</td><td>"+(v("kg"+n)?v("kg"+n)+"Kg":"")+"</td><td class='remarks'>"+v("r"+n)+"</td><td class='shape'>"+v("shape"+n)+"</td></tr>";}
   else rows+="<tr><td></td><td></td><td></td><td></td><td></td><td></td><td class='remarks'></td><td></td></tr>";
  }
  g("outRows").innerHTML=rows;g("outTotalPieces").innerText=tp+"個";g("outTotalWeight").innerText=(Math.round(tw*10)/10).toFixed(1)+"Kg";
@@ -1677,7 +1603,7 @@ window.onload=function(){
  g("xrayMinute").value=pad(currentDate.getMinutes());
  setupAgents();
  updateXrayText();
- addItem("","","","","","","","カートン");
+ addItem("","","","","","","カートン");
  updateReport();
 };
 </script>
