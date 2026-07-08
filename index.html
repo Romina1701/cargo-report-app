@@ -1290,6 +1290,39 @@ input[id^="no"] {
   }
 }
 
+
+/* ===== PDF反映安定化・明細セル表示補強 ===== */
+.detail-table .cargo-no,
+.detail-table td:nth-child(1) {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  font-size: 12px !important;
+  letter-spacing: -0.35px !important;
+}
+
+.detail-table .remarks,
+.detail-table td:nth-child(7) {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+.detail-table .shape,
+.detail-table td:nth-child(8) {
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
+@media print {
+  .detail-table .cargo-no,
+  .detail-table td:nth-child(1) {
+    font-size: 12px !important;
+    letter-spacing: -0.35px !important;
+  }
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1657,13 +1690,68 @@ function renderQrDigits(digits){
 
 function updateReport(){
  var a=selectedAgent();
- g("outCreatedAt").innerText=v("createdAtText");g("outStaff").innerText=v("staff");g("outAgent").innerText=a.name;g("outXrayAt").innerText=v("xrayAtText");g("outShipper").innerText=v("shipper");g("outInboundNo").innerText=v("inboundNo");g("outMawb").innerText=v("mawb");g("outHawb").innerText=v("hawb");var barcodeDigits=extractBarcodeDigits(v("inboundNo"));g("outBarcode").innerText=barcodeDigits;renderBarcodeDigits(barcodeDigits);renderQrDigits(barcodeDigits);renderQrDigits(barcodeDigits);
- var rows="",tp=0,tw=0,nos=getActiveItemNos();
- for(var i=0;i<12;i++){
-  if(i<nos.length){var n=nos[i],p=Number(v("p"+n)||0),kg=Number(v("kg"+n)||0);tp+=p;tw+=kg;rows+="<tr><td class=\"cargo-no\">"+(v("no"+n)||"")+"</td><td>"+v("l"+n)+"</td><td>"+v("w"+n)+"</td><td>"+v("h"+n)+"</td><td>"+(v("p"+n)?v("p"+n)+"個":"")+"</td><td>"+(v("kg"+n)?v("kg"+n)+"Kg":"")+"</td><td class='remarks'>"+v("r"+n)+"</td><td class='shape'>"+v("shape"+n)+"</td></tr>";}
-  else rows+="<tr><td></td><td></td><td></td><td></td><td></td><td></td><td class='remarks'></td><td></td></tr>";
+
+ g("outCreatedAt").innerText=v("createdAtText");
+ g("outStaff").innerText=v("staff");
+ g("outAgent").innerText=a.name||"";
+ g("outXrayAt").innerText=v("xrayAtText");
+ g("outShipper").innerText=v("shipper");
+ g("outInboundNo").innerText=v("inboundNo");
+ g("outMawb").innerText=v("mawb");
+ g("outHawb").innerText=v("hawb");
+
+ var totalPieces=0;
+ var totalKg=0;
+ var rows="";
+ var boxes=document.querySelectorAll("#items .item");
+
+ boxes.forEach(function(box){
+  var id=(box.id||"").replace("item","");
+  if(!id) return;
+
+  var no=v("no"+id);
+  var l=v("l"+id);
+  var w=v("w"+id);
+  var h=v("h"+id);
+  var pText=v("p"+id);
+  var kgText=v("kg"+id);
+  var remarks=v("remarks"+id);
+  var shape=v("shape"+id);
+
+  var hasData = no || l || w || h || pText || kgText || remarks || shape;
+  if(!hasData) return;
+
+  var p = Number((pText||"0").replace(/[^0-9.]/g,"")) || 0;
+  var kg = Number((kgText||"0").replace(/[^0-9.]/g,"")) || 0;
+
+  totalPieces += p;
+  totalKg += kg;
+
+  rows += "<tr>"
+    + "<td class=\"cargo-no\">"+no+"</td>"
+    + "<td>"+l+"</td>"
+    + "<td>"+w+"</td>"
+    + "<td>"+h+"</td>"
+    + "<td>"+(pText ? pText+"個" : "")+"</td>"
+    + "<td>"+(kgText ? Number(kgText).toFixed(1)+"Kg" : "")+"</td>"
+    + "<td class=\"remarks\">"+remarks+"</td>"
+    + "<td class=\"shape\">"+shape+"</td>"
+    + "</tr>";
+ });
+
+ var currentRows=(rows.match(/<tr>/g)||[]).length;
+ for(var i=0;i<12-currentRows;i++){
+  rows += '<tr><td class="cargo-no"></td><td></td><td></td><td></td><td></td><td></td><td class="remarks"></td><td class="shape"></td></tr>';
  }
- g("outRows").innerHTML=rows;g("outTotalPieces").innerText=tp+"個";g("outTotalWeight").innerText=(Math.round(tw*10)/10).toFixed(1)+"Kg";
+
+ g("detailRows").innerHTML=rows;
+ g("outTotalPieces").innerText=totalPieces+"個";
+ g("outTotalKg").innerText=totalKg.toFixed(1)+"Kg";
+
+ var barcodeDigits=extractBarcodeDigits(v("inboundNo"));
+ g("outBarcode").innerText=barcodeDigits;
+ renderBarcodeDigits(barcodeDigits);
+ renderQrDigits(barcodeDigits);
 }
 function compressPhoto(input,no){
  if(!input.files||!input.files[0])return;
