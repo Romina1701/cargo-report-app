@@ -753,7 +753,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 
 <div class="row">
 <div><label>代理店コード</label><input id="agentCode" readonly></div>
-<div><label>入庫No 自動</label><input id="inboundNo" readonly></div>
+<div><label>入庫No 自動</label><input id="inboundNo" readonly placeholder="代理店選択後に自動作成"></div>
 </div>
 
 <div class="row3">
@@ -793,9 +793,8 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 </div>
 
 <div class="action-area">
-  <button type="button" class="green" onclick="updateReport()">帳票を更新</button>
-  <button type="button" onclick="showPdfGuide()">PDFを作成 / 共有</button>
-  <p class="small">入力が終わったら、ここから会社名なし・A4 1ページ優先版でPDF専用画面を開きます。</p>
+<button type="button" onclick="showPdfGuide()">PDFを作成 / 共有</button>
+  <p class="small">入力が終わったら、ここからPDFを作成して共有できます。入力内容はPDF作成時に自動反映されます。</p>
 </div>
 </div>
 
@@ -898,28 +897,37 @@ var agents=[
 {code:"KSK",name:"京神倉庫株式会社"}
 ];
 
-var shapeOptions=["カートン","パレット","木箱","木枠","ロール","ビニール","トライウォール","紙袋","ドラム","ファイバードラム","ジェリ缶"];
+var shapeOptions=["カートン","パレット","木箱（燻蒸印あり）","木箱（燻蒸印なし）","木枠（燻蒸印あり）","木枠（燻蒸印なし）","ロール","ベール","ビニール","トライウォール","紙袋","ドラム","ファイバードラム","ジェリ缶","フレコンバッグ","４Gカートン"];
 
 function g(id){return document.getElementById(id)}
 function v(id){var e=g(id);return e?e.value:""}
 function pad(n){return("0"+n).slice(-2)}
 function codeOf(a){return a.displayCode||a.code}
-function selectedAgent(){return agents[selectedAgentIndex]||agents[0]}
+function selectedAgent(){return selectedAgentIndex>=0 ? agents[selectedAgentIndex] : {code:"",name:""}}
 
 function makeDateText(d){var w=["日","月","火","水","木","金","土"][d.getDay()];return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日 "+w+"曜日 "+pad(d.getHours())+"時"+pad(d.getMinutes())+"分"}
 function makeTimePart(d){return String(d.getFullYear())+pad(d.getMonth()+1)+pad(d.getDate())+pad(d.getHours())+pad(d.getMinutes())}
-function buildInboundNo(){return codeOf(selectedAgent())+makeTimePart(currentDate)}
+function buildInboundNo(){var c=codeOf(selectedAgent());return c ? c+makeTimePart(currentDate) : ""}
 function formatDateForInput(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 
 function setupAgents(){
  var sel=g("agentSelect");sel.innerHTML="";
+
+ var blank=document.createElement("option");
+ blank.value="";
+ blank.text="選択してください";
+ sel.appendChild(blank);
+
  for(var i=0;i<agents.length;i++){
   var opt=document.createElement("option");
   opt.value=i;
   opt.text=codeOf(agents[i])+"　"+agents[i].name;
   sel.appendChild(opt);
  }
- selectedAgentIndex=0;sel.value=0;onAgentChange();
+
+ selectedAgentIndex=-1;
+ sel.value="";
+ onAgentChange();
 }
 function setupTimeSelects(){
  var hsel=g("xrayHour");hsel.innerHTML="";
@@ -928,9 +936,16 @@ function setupTimeSelects(){
  for(var m=0;m<60;m++){var om=document.createElement("option");om.value=pad(m);om.text=pad(m)+"分";msel.appendChild(om)}
 }
 function onAgentChange(){
- selectedAgentIndex=Number(v("agentSelect")||0);
- g("agentCode").value=codeOf(selectedAgent());
- g("inboundNo").value=buildInboundNo();
+ var val=v("agentSelect");
+ if(val===""){
+  selectedAgentIndex=-1;
+  g("agentCode").value="";
+  g("inboundNo").value="";
+ }else{
+  selectedAgentIndex=Number(val);
+  g("agentCode").value=codeOf(selectedAgent());
+  g("inboundNo").value=buildInboundNo();
+ }
  updateReport();
 }
 function updateXrayText(){
@@ -1217,6 +1232,7 @@ function compressPhoto(input,no){
 }
 async function showPdfGuide(){
   updateReport();
+  if(!v("agentSelect")){ alert("代理店名を選択してください。"); return; }
   await renderQrDigits(extractBarcodeDigits(v("inboundNo")));
   await new Promise(function(resolve){ setTimeout(resolve, 150); });
 
