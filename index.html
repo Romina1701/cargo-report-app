@@ -897,6 +897,60 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
   }
 }
 
+
+/* ===== 備考を少し狭め、貨物形状を広げる ===== */
+.detail-table th:nth-child(1),
+.detail-table td:nth-child(1) { width: 6% !important; }
+
+.detail-table th:nth-child(2),
+.detail-table td:nth-child(2),
+.detail-table th:nth-child(3),
+.detail-table td:nth-child(3),
+.detail-table th:nth-child(4),
+.detail-table td:nth-child(4),
+.detail-table th:nth-child(5),
+.detail-table td:nth-child(5) { width: 8% !important; }
+
+.detail-table th:nth-child(6),
+.detail-table td:nth-child(6) { width: 10% !important; }
+
+.detail-table th:nth-child(7),
+.detail-table td:nth-child(7) { width: 28% !important; }
+
+.detail-table th:nth-child(8),
+.detail-table td:nth-child(8) { width: 24% !important; }
+
+.detail-table .remarks {
+  font-size: 13px !important;
+  word-break: break-word !important;
+}
+
+.detail-table .shape {
+  font-size: 12px !important;
+  line-height: 1.05 !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  letter-spacing: -0.3px !important;
+}
+
+/* 画面プレビュー・PDF生成どちらも同じ配分 */
+@media print {
+  .detail-table th:nth-child(7),
+  .detail-table td:nth-child(7) { width: 28% !important; }
+
+  .detail-table th:nth-child(8),
+  .detail-table td:nth-child(8) { width: 24% !important; }
+
+  .detail-table .shape {
+    font-size: 12px !important;
+    line-height: 1.05 !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    letter-spacing: -0.3px !important;
+  }
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
