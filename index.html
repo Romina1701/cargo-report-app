@@ -728,6 +728,80 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
   }
 }
 
+
+/* ===== 印刷見やすさ強化：12行・文字大きめ ===== */
+.report-table th {
+  font-size: 9.5px !important;
+  padding: 2.2px 2px !important;
+}
+
+.report-table td {
+  font-size: 10px !important;
+  padding: 2.3px 2px !important;
+  height: 6.2mm !important;
+}
+
+.report-table .small {
+  font-size: 8.5px !important;
+}
+
+.top-cell,
+.info-cell {
+  font-size: 10px !important;
+}
+
+.caption {
+  font-size: 8px !important;
+}
+
+.total-row,
+.total-cell {
+  font-size: 10px !important;
+}
+
+/* QRコードは読み取り優先で大きく、白余白あり */
+.qr {
+  width: 17mm !important;
+  height: 17mm !important;
+  padding: 1.5mm !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+}
+
+.qr canvas {
+  width: 14mm !important;
+  height: 14mm !important;
+  image-rendering: pixelated;
+  background: #fff !important;
+}
+
+.header {
+  min-height: 18mm !important;
+}
+
+.title {
+  font-size: 20px !important;
+}
+
+@media print {
+  .report-table th {
+    font-size: 9.5px !important;
+  }
+  .report-table td {
+    font-size: 10px !important;
+    height: 6.2mm !important;
+  }
+  .qr {
+    width: 17mm !important;
+    height: 17mm !important;
+    padding: 1.5mm !important;
+  }
+  .qr canvas {
+    width: 14mm !important;
+    height: 14mm !important;
+  }
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -738,7 +812,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 <div class="app">
 <div class="card">
 <h1>📦 入庫報告書フォーム</h1>
-<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。PDFは印刷経由ではなく、A4 1ページのPDFファイルとして直接作成します。QRコードは外部接続なしで端末内生成します。</p>
+<p class="note">X-RAY時間は「時」と「分」を別々に選択できます。分は1分単位です。QRコードは入庫番号から英字を抜いた数字部分だけを記録します。PDFは印刷経由ではなく、A4 1ページのPDFファイルとして直接作成します。QRコードは外部接続なしで端末内生成します。</p>
 
 
 
@@ -773,7 +847,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 </div>
 
 <h2>貨物明細</h2>
-<p class="note">W / L / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。</p>
+<p class="note">L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。</p>
 <div id="items"></div>
 <button type="button" class="dark" onclick="addItem()">明細行を追加</button>
 
@@ -976,7 +1050,7 @@ function addItem(w,l,h,pieces,weight,remarks,shape){
  for(var i=0;i<shapeOptions.length;i++){var se=(shapeOptions[i]==(shape||""))?" selected":"";s+='<option'+se+'>'+shapeOptions[i]+'</option>'}
  s+='</select>';
  var box=document.createElement("div");box.className="item-card";box.id="itemCard"+itemCount;box.setAttribute("data-item-no",itemCount);
- box.innerHTML='<div class="item-head"><strong>明細 '+itemCount+'</strong><button type="button" class="red" onclick="deleteItem('+itemCount+')">削除</button></div><div class="row4"><div><label>W</label><input id="w'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(w||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>L</label><input id="l'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(l||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>H</label><input id="h'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(h||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>個数</label><input id="p'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(pieces||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div></div><div class="row"><div><label>重量kg</label><input id="kg'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(weight||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>貨物形状</label>'+s+'</div></div><label>備考</label><input id="r'+itemCount+'" value="'+(remarks||"")+'" oninput="updateReport()">';
+ box.innerHTML='<div class="item-head"><strong>明細 '+itemCount+'</strong><button type="button" class="red" onclick="deleteItem('+itemCount+')">削除</button></div><div class="row4"><div><label>L</label><input id="l'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(l||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>W</label><input id="w'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(w||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>H</label><input id="h'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(h||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>個数</label><input id="p'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(pieces||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div></div><div class="row"><div><label>重量kg</label><input id="kg'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+(weight||"")+'" oninput="sanitizeDecimalInput(this);updateReport()"></div><div><label>貨物形状</label>'+s+'</div></div><label>備考</label><input id="r'+itemCount+'" value="'+(remarks||"")+'" oninput="updateReport()">';
  g("items").appendChild(box);updateReport();
 }
 function deleteItem(no){var el=g("itemCard"+no);if(el)el.remove();updateReport()}
@@ -1038,9 +1112,10 @@ function renderQrDigits(digits){
   digits = String(digits || "").replace(/\D/g, "");
   var ctx = canvas.getContext("2d");
   var size = 21;
+  var quiet = 4;
   var scale = 4;
-  canvas.width = size * scale;
-  canvas.height = size * scale;
+  canvas.width = (size + quiet * 2) * scale;
+  canvas.height = (size + quiet * 2) * scale;
 
   function clear(){
     ctx.fillStyle = "#fff";
@@ -1208,7 +1283,7 @@ function renderQrDigits(digits){
   for(var yy=0;yy<size;yy++){
     for(var xx2=0;xx2<size;xx2++){
       if(modules[yy][xx2]){
-        ctx.fillRect(xx2*scale, yy*scale, scale, scale);
+        ctx.fillRect((xx2+quiet)*scale, (yy+quiet)*scale, scale, scale);
       }
     }
   }
@@ -1219,7 +1294,7 @@ function updateReport(){
  var a=selectedAgent();
  g("outCreatedAt").innerText=v("createdAtText");g("outStaff").innerText=v("staff");g("outAgent").innerText=a.name;g("outXrayAt").innerText=v("xrayAtText");g("outShipper").innerText=v("shipper");g("outInboundNo").innerText=v("inboundNo");g("outMawb").innerText=v("mawb");g("outHawb").innerText=v("hawb");var barcodeDigits=extractBarcodeDigits(v("inboundNo"));g("outBarcode").innerText=barcodeDigits;renderBarcodeDigits(barcodeDigits);renderQrDigits(barcodeDigits);
  var rows="",tp=0,tw=0,nos=getActiveItemNos();
- for(var i=0;i<14;i++){
+ for(var i=0;i<12;i++){
   if(i<nos.length){var n=nos[i],p=Number(v("p"+n)||0),kg=Number(v("kg"+n)||0);tp+=p;tw+=kg;rows+="<tr><td>"+(i+1)+"</td><td>"+v("w"+n)+"</td><td>"+v("l"+n)+"</td><td>"+v("h"+n)+"</td><td>"+(v("p"+n)?v("p"+n)+"個":"")+"</td><td>"+(v("kg"+n)?v("kg"+n)+"Kg":"")+"</td><td class='remarks'>"+v("r"+n)+"</td><td class='shape'>"+v("shape"+n)+"</td></tr>";}
   else rows+="<tr><td></td><td></td><td></td><td></td><td></td><td></td><td class='remarks'></td><td></td></tr>";
  }
