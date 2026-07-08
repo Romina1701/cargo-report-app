@@ -1271,6 +1271,25 @@ input[id^="no"] {
   }
 }
 
+
+/* ===== No.欄：数字＋ハイフン対応 ===== */
+.detail-table .cargo-no,
+.detail-table td:nth-child(1) {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  font-size: 12.2px !important;
+  letter-spacing: -0.45px !important;
+}
+
+@media print {
+  .detail-table .cargo-no,
+  .detail-table td:nth-child(1) {
+    font-size: 12.2px !important;
+    letter-spacing: -0.45px !important;
+  }
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1316,7 +1335,7 @@ input[id^="no"] {
 </div>
 
 <h2>貨物明細</h2>
-<p class="note">No.は必要な場合のみ入力できます。No.は数字だけ入力できます。L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。重量欄はその行の総重量として入力します。合計重量は各行の重量を足して自動計算します。</p>
+<p class="note">No.は必要な場合のみ入力できます。No.は数字とハイフン「-」を入力できます。L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。重量欄はその行の総重量として入力します。合計重量は各行の重量を足して自動計算します。</p>
 <div id="items"></div>
 <button type="button" class="dark" onclick="addItem('','','','','','','','カートン')">明細行を追加</button>
 
@@ -1504,7 +1523,9 @@ function updateXrayText(){
 function sanitizeDigitsInput(el){
   if(!el) return;
   var before = el.value || "";
-  var cleaned = before.replace(/[^0-9]/g, "");
+  var cleaned = before.replace(/[^0-9-]/g, "");
+  // ハイフンの連続だけ軽く整理
+  cleaned = cleaned.replace(/--+/g, "-");
   if(before !== cleaned){
     el.value = cleaned;
   }
@@ -1540,7 +1561,7 @@ function addItem(no,w,l,h,pieces,weight,remarks,shape){
  box.innerHTML =
  '<div class="item-title"><strong>明細 '+itemCount+'</strong><button type="button" class="danger" onclick="removeItem('+itemCount+')">削除</button></div>'
  + '<div class="row4">'
- + '<div><label>No.</label><input id="no'+itemCount+'" type="text" inputmode="numeric" pattern="[0-9]*" value="'+(no||"")+'" oninput="sanitizeDigitsInput(this);updateReport()"></div>'
+ + '<div><label>No.</label><input id="no'+itemCount+'" type="text" inputmode="text" pattern="[0-9-]*" value="'+(no||"")+'" oninput="sanitizeDigitsInput(this);updateReport()"></div>'
  + '<div><label>L</label><input id="l'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+l+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
  + '<div><label>W</label><input id="w'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+w+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
  + '<div><label>H</label><input id="h'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+h+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
