@@ -1437,38 +1437,58 @@ button.excel-btn {
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js">
-/* ===== Excel出力：既存PDF処理から独立 ===== */
-function excelSafeFileName(text){
+
+
+
+/* ===== Excel出力：安定版 ===== */
+function excelSafeFileNameV2(text){
   return String(text || "")
     .replace(/[\\/:*?"<>|]/g, "")
     .replace(/\s+/g, "_")
     .trim() || "cargo-report";
 }
 
-function excelRead(id){
+function excelValueV2(id){
   var el = document.getElementById(id);
   if(!el) return "";
   return el.value || el.textContent || "";
 }
 
-function excelGetSelectedAgent(){
-  try {
+function excelWaitForXLSX(){
+  return new Promise(function(resolve, reject){
+    var count = 0;
+    var timer = setInterval(function(){
+      count++;
+      if(window.XLSX){
+        clearInterval(timer);
+        resolve();
+      }
+      if(count > 50){
+        clearInterval(timer);
+        reject(new Error("XLSX load timeout"));
+      }
+    }, 100);
+  });
+}
+
+function excelAgentV2(){
+  try{
     return selectedAgent();
-  } catch(e) {
+  }catch(e){
     return {name:"", code:""};
   }
 }
 
-function excelGetCode(agent){
-  try {
+function excelCodeV2(agent){
+  try{
     return codeOf(agent);
-  } catch(e) {
+  }catch(e){
     return agent && agent.code ? agent.code : "";
   }
 }
 
-function excelCollectDetails(){
-  var result = [];
+function excelDetailsV2(){
+  var rows = [];
   var boxes = document.querySelectorAll("#items .item");
 
   boxes.forEach(function(box){
@@ -1476,41 +1496,45 @@ function excelCollectDetails(){
     if(!id) return;
 
     var row = {
-      no: excelRead("no"+id),
-      l: excelRead("l"+id),
-      w: excelRead("w"+id),
-      h: excelRead("h"+id),
-      pieces: excelRead("p"+id),
-      weight: excelRead("kg"+id),
-      remarks: excelRead("remarks"+id),
-      shape: excelRead("shape"+id)
+      no: excelValueV2("no"+id),
+      l: excelValueV2("l"+id),
+      w: excelValueV2("w"+id),
+      h: excelValueV2("h"+id),
+      pieces: excelValueV2("p"+id),
+      weight: excelValueV2("kg"+id),
+      remarks: excelValueV2("remarks"+id),
+      shape: excelValueV2("shape"+id)
     };
 
     var hasData = row.no || row.l || row.w || row.h || row.pieces || row.weight || row.remarks;
-    if(hasData) result.push(row);
+    if(hasData){
+      rows.push(row);
+    }
   });
 
-  return result;
+  return rows;
 }
 
 async function createExcelReport(){
-  try {
+  try{
     if(typeof updateReport === "function") updateReport();
 
-    if(typeof XLSX === "undefined"){
-      alert("Excel作成ライブラリを読み込み中です。数秒待ってからもう一度押してください。");
-      return;
-    }
+    var btn = document.querySelector('button[onclick="createExcelReport()"]');
+    var oldText = btn ? btn.innerText : "";
+    if(btn) btn.innerText = "Excel作成中...";
+
+    await excelWaitForXLSX();
 
     var agentSelect = document.getElementById("agentSelect");
     if(agentSelect && !agentSelect.value){
       alert("代理店名を選択してください。");
+      if(btn) btn.innerText = oldText;
       return;
     }
 
-    var agent = excelGetSelectedAgent();
-    var inboundNo = excelRead("inboundNo") || "cargo-report";
-    var details = excelCollectDetails();
+    var agent = excelAgentV2();
+    var inboundNo = excelValueV2("inboundNo") || "cargo-report";
+    var details = excelDetailsV2();
 
     var totalPieces = 0;
     var totalWeight = 0;
@@ -1520,13 +1544,13 @@ async function createExcelReport(){
     });
 
     var aoa = [
-      ["", "", "入庫報告書", "", "", "作成日時", excelRead("createdAtText"), ""],
-      ["", "", "", "", "", "入庫担当者", excelRead("staff"), ""],
+      ["", "", "入庫報告書", "", "", "作成日時", excelValueV2("createdAtText"), ""],
+      ["", "", "", "", "", "入庫担当者", excelValueV2("staff"), ""],
       ["JAL CARGO", "", "", "", "", "", "", ""],
       [],
-      ["代理店名", agent.name || "", "", "X-RAY日時", excelRead("xrayAtText"), "X-RAY結果", excelRead("xrayResult"), ""],
-      ["Shipper / お客様名", excelRead("shipper"), "", "入庫No", inboundNo, "", "", ""],
-      ["MAWB No.", excelRead("mawb"), "", "HAWB No.", excelRead("hawb"), "", "", ""],
+      ["代理店名", agent.name || "", "", "X-RAY日時", excelValueV2("xrayAtText"), "X-RAY結果", excelValueV2("xrayResult"), ""],
+      ["Shipper / お客様名", excelValueV2("shipper"), "", "入庫No", inboundNo, "", "", ""],
+      ["MAWB No.", excelValueV2("mawb"), "", "HAWB No.", excelValueV2("hawb"), "", "", ""],
       [],
       ["No.", "L", "W", "H", "個数", "重量kg", "備考", "貨物形状"]
     ];
@@ -1598,8 +1622,10 @@ async function createExcelReport(){
 
     var wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
     var blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    var fileName = excelSafeFileName(inboundNo) + ".xlsx";
-    var file = new File([blob], fileName, {type: blob.type});
+    var fileName = excelSafeFileNameV2(inboundNo) + ".xlsx";
+    var file = new File([blob], fileName, {type:blob.type});
+
+    if(btn) btn.innerText = oldText;
 
     if(navigator.canShare && navigator.canShare({files:[file]})){
       await navigator.share({
@@ -1617,16 +1643,18 @@ async function createExcelReport(){
       document.body.removeChild(a);
       setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
     }
-  } catch(err) {
+  }catch(err){
     console.error(err);
-    alert("Excel作成中にエラーが出ました。入力内容を確認してもう一度試してください。");
+    alert("Excel作成に失敗しました。通信状態を確認して、数秒後にもう一度押してください。");
+    var btn2 = document.querySelector('button[onclick="createExcelReport()"]');
+    if(btn2) btn2.innerText = "Excelを作成 / 共有";
   }
 }
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
