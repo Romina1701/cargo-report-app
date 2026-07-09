@@ -1440,221 +1440,241 @@ button.excel-btn {
 
 
 
-/* ===== Excel出力：安定版 ===== */
-function excelSafeFileNameV2(text){
-  return String(text || "")
-    .replace(/[\\/:*?"<>|]/g, "")
-    .replace(/\s+/g, "_")
+
+
+
+/* ===== Excel出力：外部ライブラリなし .xls 互換版 ===== */
+function excelEscape(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+function excelFileSafe(s){
+  return String(s || "cargo-report")
+    .replace(/[\\/:*?"<>|]/g,"")
+    .replace(/\s+/g,"_")
     .trim() || "cargo-report";
 }
 
-function excelValueV2(id){
-  var el = document.getElementById(id);
+function excelReadValue(id){
+  var el=document.getElementById(id);
   if(!el) return "";
   return el.value || el.textContent || "";
 }
 
-function excelWaitForXLSX(){
-  return new Promise(function(resolve, reject){
-    var count = 0;
-    var timer = setInterval(function(){
-      count++;
-      if(window.XLSX){
-        clearInterval(timer);
-        resolve();
-      }
-      if(count > 50){
-        clearInterval(timer);
-        reject(new Error("XLSX load timeout"));
-      }
-    }, 100);
-  });
+function excelGetAgent(){
+  try { return selectedAgent(); } catch(e) { return {name:"",code:""}; }
 }
 
-function excelAgentV2(){
-  try{
-    return selectedAgent();
-  }catch(e){
-    return {name:"", code:""};
-  }
+function excelGetAgentCode(a){
+  try { return codeOf(a); } catch(e) { return (a && a.code) ? a.code : ""; }
 }
 
-function excelCodeV2(agent){
-  try{
-    return codeOf(agent);
-  }catch(e){
-    return agent && agent.code ? agent.code : "";
-  }
-}
-
-function excelDetailsV2(){
-  var rows = [];
-  var boxes = document.querySelectorAll("#items .item");
-
+function excelCollectRows(){
+  var rows=[];
+  var boxes=document.querySelectorAll("#items .item");
   boxes.forEach(function(box){
-    var id = (box.id || "").replace("item", "");
+    var id=(box.id||"").replace("item","");
     if(!id) return;
-
-    var row = {
-      no: excelValueV2("no"+id),
-      l: excelValueV2("l"+id),
-      w: excelValueV2("w"+id),
-      h: excelValueV2("h"+id),
-      pieces: excelValueV2("p"+id),
-      weight: excelValueV2("kg"+id),
-      remarks: excelValueV2("remarks"+id),
-      shape: excelValueV2("shape"+id)
+    var r={
+      no: excelReadValue("no"+id),
+      l: excelReadValue("l"+id),
+      w: excelReadValue("w"+id),
+      h: excelReadValue("h"+id),
+      pieces: excelReadValue("p"+id),
+      weight: excelReadValue("kg"+id),
+      remarks: excelReadValue("remarks"+id),
+      shape: excelReadValue("shape"+id)
     };
-
-    var hasData = row.no || row.l || row.w || row.h || row.pieces || row.weight || row.remarks;
-    if(hasData){
-      rows.push(row);
-    }
+    var hasData=r.no||r.l||r.w||r.h||r.pieces||r.weight||r.remarks;
+    if(hasData) rows.push(r);
   });
-
   return rows;
 }
 
-async function createExcelReport(){
+function excelCell(text, cls, colspan, rowspan){
+  var attrs="";
+  if(cls) attrs+=' class="'+cls+'"';
+  if(colspan && colspan>1) attrs+=' colspan="'+colspan+'"';
+  if(rowspan && rowspan>1) attrs+=' rowspan="'+rowspan+'"';
+  return "<td"+attrs+">"+excelEscape(text)+"</td>";
+}
+
+function createExcelReport(){
   try{
-    if(typeof updateReport === "function") updateReport();
+    if(typeof updateReport==="function") updateReport();
 
-    var btn = document.querySelector('button[onclick="createExcelReport()"]');
-    var oldText = btn ? btn.innerText : "";
-    if(btn) btn.innerText = "Excel作成中...";
-
-    await excelWaitForXLSX();
-
-    var agentSelect = document.getElementById("agentSelect");
+    var agentSelect=document.getElementById("agentSelect");
     if(agentSelect && !agentSelect.value){
       alert("代理店名を選択してください。");
-      if(btn) btn.innerText = oldText;
       return;
     }
 
-    var agent = excelAgentV2();
-    var inboundNo = excelValueV2("inboundNo") || "cargo-report";
-    var details = excelDetailsV2();
+    var agent=excelGetAgent();
+    var inboundNo=excelReadValue("inboundNo") || "cargo-report";
+    var rows=excelCollectRows();
 
-    var totalPieces = 0;
-    var totalWeight = 0;
-    details.forEach(function(r){
-      totalPieces += Number(String(r.pieces || "0").replace(/[^0-9.]/g, "")) || 0;
-      totalWeight += Number(String(r.weight || "0").replace(/[^0-9.]/g, "")) || 0;
+    var totalPieces=0;
+    var totalWeight=0;
+    rows.forEach(function(r){
+      totalPieces += Number(String(r.pieces||"0").replace(/[^0-9.]/g,"")) || 0;
+      totalWeight += Number(String(r.weight||"0").replace(/[^0-9.]/g,"")) || 0;
     });
 
-    var aoa = [
-      ["", "", "入庫報告書", "", "", "作成日時", excelValueV2("createdAtText"), ""],
-      ["", "", "", "", "", "入庫担当者", excelValueV2("staff"), ""],
-      ["JAL CARGO", "", "", "", "", "", "", ""],
-      [],
-      ["代理店名", agent.name || "", "", "X-RAY日時", excelValueV2("xrayAtText"), "X-RAY結果", excelValueV2("xrayResult"), ""],
-      ["Shipper / お客様名", excelValueV2("shipper"), "", "入庫No", inboundNo, "", "", ""],
-      ["MAWB No.", excelValueV2("mawb"), "", "HAWB No.", excelValueV2("hawb"), "", "", ""],
-      [],
-      ["No.", "L", "W", "H", "個数", "重量kg", "備考", "貨物形状"]
-    ];
+    var htmlTable="";
+    htmlTable += '<table>';
 
-    for(var i=0; i<12; i++){
-      var r = details[i] || {};
-      aoa.push([
-        r.no || "",
-        r.l || "",
-        r.w || "",
-        r.h || "",
-        r.pieces || "",
-        r.weight || "",
-        r.remarks || "",
-        r.shape || ""
-      ]);
+    htmlTable += '<colgroup>'
+      + '<col style="width:90px"><col style="width:80px"><col style="width:90px"><col style="width:80px">'
+      + '<col style="width:70px"><col style="width:95px"><col style="width:160px"><col style="width:165px">'
+      + '</colgroup>';
+
+    htmlTable += '<tr>'
+      + excelCell("", "qr", 2, 2)
+      + excelCell("入庫報告書", "title", 3, 2)
+      + excelCell("作成日時", "label")
+      + excelCell(excelReadValue("createdAtText"), "value", 2)
+      + '</tr>';
+    htmlTable += '<tr>'
+      + excelCell("入庫担当者", "label")
+      + excelCell(excelReadValue("staff"), "value", 2)
+      + '</tr>';
+    htmlTable += '<tr>' + excelCell("JAL CARGO", "logo", 2) + excelCell("", "", 6) + '</tr>';
+    htmlTable += '<tr><td colspan="8" class="spacer"></td></tr>';
+
+    htmlTable += '<tr>'
+      + excelCell("代理店名", "label")
+      + excelCell(agent.name||"", "value", 2)
+      + excelCell("X-RAY日時", "label")
+      + excelCell(excelReadValue("xrayAtText"), "value")
+      + excelCell("X-RAY結果", "label")
+      + excelCell(excelReadValue("xrayResult"), "value", 2)
+      + '</tr>';
+
+    htmlTable += '<tr>'
+      + excelCell("Shipper / お客様名", "label")
+      + excelCell(excelReadValue("shipper"), "value", 2)
+      + excelCell("入庫No", "label")
+      + excelCell(inboundNo, "value", 4)
+      + '</tr>';
+
+    htmlTable += '<tr>'
+      + excelCell("MAWB No.", "label")
+      + excelCell(excelReadValue("mawb"), "value", 2)
+      + excelCell("HAWB No.", "label")
+      + excelCell(excelReadValue("hawb"), "value", 4)
+      + '</tr>';
+
+    htmlTable += '<tr><td colspan="8" class="spacer"></td></tr>';
+
+    htmlTable += '<tr>'
+      + excelCell("No.", "th")
+      + excelCell("L", "th")
+      + excelCell("W", "th")
+      + excelCell("H", "th")
+      + excelCell("個数", "th")
+      + excelCell("重量kg", "th")
+      + excelCell("備考", "th")
+      + excelCell("貨物形状", "th")
+      + '</tr>';
+
+    for(var i=0;i<12;i++){
+      var r=rows[i] || {};
+      htmlTable += '<tr>'
+        + excelCell(r.no||"", "td")
+        + excelCell(r.l||"", "td")
+        + excelCell(r.w||"", "td")
+        + excelCell(r.h||"", "td")
+        + excelCell(r.pieces||"", "td")
+        + excelCell(r.weight||"", "td")
+        + excelCell(r.remarks||"", "td")
+        + excelCell(r.shape||"", "td")
+        + '</tr>';
     }
 
-    aoa.push([]);
-    aoa.push(["合計個数", totalPieces + "個", "", "合計重量", totalWeight.toFixed(1) + "kg", "", "", ""]);
-    aoa.push([]);
-    aoa.push(["写真①", "", "写真②", "", "写真③", "", "", ""]);
-    aoa.push(["", "", "", "", "", "", "", ""]);
-    aoa.push(["", "", "", "", "", "", "", ""]);
-    aoa.push(["", "", "", "", "", "", "", ""]);
-    aoa.push(["写真④", "", "写真⑤", "", "写真⑥", "", "", ""]);
-    aoa.push(["", "", "", "", "", "", "", ""]);
-    aoa.push(["", "", "", "", "", "", "", ""]);
-    aoa.push(["", "", "", "", "", "", "", ""]);
-    aoa.push([]);
-    aoa.push(["備考", "写真は別途貼り付けまたは別送", "", "", "", "", "", ""]);
+    htmlTable += '<tr><td colspan="8" class="spacer"></td></tr>';
+    htmlTable += '<tr>'
+      + excelCell("合計個数", "label")
+      + excelCell(totalPieces+"個", "total", 2)
+      + excelCell("合計重量", "label")
+      + excelCell(totalWeight.toFixed(1)+"kg", "total", 2)
+      + excelCell("", "", 2)
+      + '</tr>';
 
-    var wb = XLSX.utils.book_new();
-    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    htmlTable += '<tr><td colspan="8" class="spacer"></td></tr>';
 
-    ws["!cols"] = [
-      {wch:14},{wch:12},{wch:14},{wch:12},{wch:10},{wch:14},{wch:20},{wch:22}
-    ];
+    htmlTable += '<tr>'
+      + excelCell("写真①", "photo", 2, 4)
+      + excelCell("写真②", "photo", 2, 4)
+      + excelCell("写真③", "photo", 2, 4)
+      + excelCell("", "", 2, 4)
+      + '</tr><tr></tr><tr></tr><tr></tr>';
 
-    ws["!rows"] = aoa.map(function(_, idx){
-      if(idx === 0) return {hpt: 30};
-      if(idx === 8) return {hpt: 22};
-      if(idx >= 9 && idx <= 20) return {hpt: 21};
-      if(idx === 23 || idx === 27) return {hpt: 20};
-      if((idx >= 24 && idx <= 26) || (idx >= 28 && idx <= 30)) return {hpt: 56};
-      return {hpt: 18};
-    });
+    htmlTable += '<tr>'
+      + excelCell("写真④", "photo", 2, 4)
+      + excelCell("写真⑤", "photo", 2, 4)
+      + excelCell("写真⑥", "photo", 2, 4)
+      + excelCell("", "", 2, 4)
+      + '</tr><tr></tr><tr></tr><tr></tr>';
 
-    ws["!merges"] = [
-      {s:{r:0,c:2}, e:{r:1,c:4}},
-      {s:{r:2,c:0}, e:{r:2,c:1}},
-      {s:{r:4,c:1}, e:{r:4,c:2}},
-      {s:{r:5,c:1}, e:{r:5,c:2}},
-      {s:{r:5,c:4}, e:{r:5,c:7}},
-      {s:{r:6,c:1}, e:{r:6,c:2}},
-      {s:{r:6,c:4}, e:{r:6,c:7}},
-      {s:{r:22,c:1}, e:{r:22,c:2}},
-      {s:{r:22,c:4}, e:{r:22,c:5}},
-      {s:{r:23,c:0}, e:{r:26,c:1}},
-      {s:{r:23,c:2}, e:{r:26,c:3}},
-      {s:{r:23,c:4}, e:{r:26,c:5}},
-      {s:{r:27,c:0}, e:{r:30,c:1}},
-      {s:{r:27,c:2}, e:{r:30,c:3}},
-      {s:{r:27,c:4}, e:{r:30,c:5}},
-      {s:{r:32,c:1}, e:{r:32,c:7}}
-    ];
+    htmlTable += '<tr><td colspan="8" class="spacer"></td></tr>';
+    htmlTable += '<tr>' + excelCell("備考", "label") + excelCell("写真は別途貼り付けまたは別送", "value", 7) + '</tr>';
+    htmlTable += '</table>';
 
-    XLSX.utils.book_append_sheet(wb, ws, "入庫報告書");
+    var excelHtml =
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office"'
+      + ' xmlns:x="urn:schemas-microsoft-com:office:excel"'
+      + ' xmlns="http://www.w3.org/TR/REC-html40">'
+      + '<head><meta charset="UTF-8">'
+      + '<style>'
+      + 'table{border-collapse:collapse;font-family:Arial,\"Yu Gothic\",Meiryo,sans-serif;font-size:11pt;}'
+      + 'td{border:1px solid #000;padding:4px;text-align:center;vertical-align:middle;mso-number-format:\"\\\\@\";}'
+      + '.title{font-size:22pt;font-weight:bold;}'
+      + '.logo{font-size:14pt;font-weight:bold;}'
+      + '.label{background:#e5e7eb;font-weight:bold;}'
+      + '.value{font-weight:bold;}'
+      + '.th{background:#dbeafe;font-weight:bold;}'
+      + '.td{height:24px;}'
+      + '.total{font-size:14pt;font-weight:bold;}'
+      + '.photo{height:130px;background:#f8fafc;font-weight:bold;color:#555;}'
+      + '.qr{background:#fff;}'
+      + '.spacer{height:8px;border-left:0;border-right:0;}'
+      + '</style></head><body>'
+      + htmlTable
+      + '</body></html>';
 
-    var wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
-    var blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    var fileName = excelSafeFileNameV2(inboundNo) + ".xlsx";
-    var file = new File([blob], fileName, {type:blob.type});
-
-    if(btn) btn.innerText = oldText;
+    var blob=new Blob([excelHtml], {type:"application/vnd.ms-excel;charset=utf-8"});
+    var fileName=excelFileSafe(inboundNo)+".xls";
+    var file=new File([blob], fileName, {type:blob.type});
 
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({
+      navigator.share({
         files:[file],
         title:"Cargo Report Excel",
         text:"入庫報告書Excel"
       });
     }else{
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url;
+      a.download=fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      setTimeout(function(){URL.revokeObjectURL(url);},1000);
     }
-  }catch(err){
-    console.error(err);
-    alert("Excel作成に失敗しました。通信状態を確認して、数秒後にもう一度押してください。");
-    var btn2 = document.querySelector('button[onclick="createExcelReport()"]');
-    if(btn2) btn2.innerText = "Excelを作成 / 共有";
+  }catch(e){
+    console.error(e);
+    alert("Excel作成に失敗しました。入力内容を確認してもう一度試してください。");
   }
 }
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
