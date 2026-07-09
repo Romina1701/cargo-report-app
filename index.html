@@ -1421,11 +1421,30 @@ input[id^="no"] {
   }
 }
 
+
+/* ===== Excel作成ボタン ===== */
+.excel-btn {
+  background: #15803d !important;
+  color: #fff !important;
+}
+.action-area .excel-btn,
+button.excel-btn {
+  background: #15803d !important;
+  color: #fff !important;
+  border: 0;
+}
+@media print {
+  .excel-btn {
+    display: none !important;
+  }
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -1482,7 +1501,7 @@ input[id^="no"] {
 <button type="button" class="dark" onclick="addItem('','','','','','','カートン','')">明細行を追加</button>
 
 <h2>写真 6枚</h2>
-<p class="note">各写真は選択時に150KB前後を目標に圧縮します。Androidの大きい写真も自動で縮小します。間違えた写真は削除または撮り直しできます。</p>
+<p class="note">各写真は選択時に150KB前後を目標に圧縮します。Androidの大きい写真も自動で縮小します。間違えた写真は削除または撮り直しできます。ExcelはPDFに近い配置で、写真欄は後から貼り付けできる空枠として出力します。</p>
 <div class="row">
 <div><label>写真①</label><input id="photo1" type="file" accept="image/*" onchange="compressPhoto(this,1)"><div id="photoStatus1" class="photo-status"></div>
 <div class="photo-actions">
@@ -1528,6 +1547,7 @@ input[id^="no"] {
 
 <div class="action-area">
 <button type="button" onclick="showPdfGuide()">PDFを作成 / 共有</button>
+  <button type="button" class="excel-btn" onclick="createExcelReport()">Excelを作成 / 共有</button>
   <p class="small">入力が終わったら、ここからPDFを作成して共有できます。入力内容はPDF作成時に自動反映されます。</p>
 </div>
 </div>
@@ -2031,7 +2051,215 @@ function compressPhoto(input,no){
 
   img.src = url;
 }
-async function showPdfGuide(){
+async 
+function safeExcelFileName(text){
+  return String(text || "")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "_")
+    .trim() || "cargo-report";
+}
+
+function collectExcelDetails(){
+  var rows = [];
+  var boxes = document.querySelectorAll("#items .item");
+
+  boxes.forEach(function(box){
+    var id = (box.id || "").replace("item", "");
+    if(!id) return;
+
+    var row = {
+      no: v("no"+id),
+      l: v("l"+id),
+      w: v("w"+id),
+      h: v("h"+id),
+      pieces: v("p"+id),
+      weight: v("kg"+id),
+      remarks: v("remarks"+id),
+      shape: v("shape"+id)
+    };
+
+    var hasData = row.no || row.l || row.w || row.h || row.pieces || row.weight || row.remarks;
+    if(hasData) rows.push(row);
+  });
+
+  return rows;
+}
+
+async function createExcelReport(){
+  updateReport();
+
+  if(typeof XLSX === "undefined"){
+    alert("Excel作成ライブラリを読み込み中です。数秒待ってからもう一度押してください。");
+    return;
+  }
+
+  if(!v("agentSelect")){
+    alert("代理店名を選択してください。");
+    return;
+  }
+
+  var a = selectedAgent();
+  var inboundNo = v("inboundNo") || "cargo-report";
+  var xrayResult = v("xrayResult") || "";
+  var details = collectExcelDetails();
+
+  var totalPieces = 0;
+  var totalWeight = 0;
+
+  details.forEach(function(r){
+    totalPieces += Number((r.pieces || "0").replace(/[^0-9.]/g, "")) || 0;
+    totalWeight += Number((r.weight || "0").replace(/[^0-9.]/g, "")) || 0;
+  });
+
+  var aoa = [];
+
+  // 0-3 header area, PDF帳票に近い配置
+  aoa.push(["", "", "入庫報告書", "", "", "作成日時", v("createdAtText")]);
+  aoa.push(["", "", "", "", "", "入庫担当者", v("staff")]);
+  aoa.push(["JAL CARGO", "", "", "", "", "", ""]);
+  aoa.push([]);
+
+  // Basic info
+  aoa.push(["代理店名", a.name || "", "", "X-RAY日時", v("xrayAtText"), "X-RAY結果", xrayResult]);
+  aoa.push(["Shipper / お客様名", v("shipper"), "", "入庫No", inboundNo, "", ""]);
+  aoa.push(["MAWB No.", v("mawb"), "", "HAWB No.", v("hawb"), "", ""]);
+  aoa.push([]);
+
+  // Detail header
+  aoa.push(["No.", "L", "W", "H", "個数", "重量kg", "備考", "貨物形状"]);
+
+  // 12 rows
+  for(var i=0;i<12;i++){
+    var r = details[i] || {};
+    aoa.push([
+      r.no || "",
+      r.l || "",
+      r.w || "",
+      r.h || "",
+      r.pieces || "",
+      r.weight || "",
+      r.remarks || "",
+      r.shape || ""
+    ]);
+  }
+
+  aoa.push([]);
+  aoa.push(["合計個数", totalPieces + "個", "", "合計重量", totalWeight.toFixed(1) + "kg", "", "", ""]);
+  aoa.push([]);
+
+  // Photo placeholders, 3 x 2
+  aoa.push(["写真①", "", "写真②", "", "写真③", "", "", ""]);
+  aoa.push(["", "", "", "", "", "", "", ""]);
+  aoa.push(["", "", "", "", "", "", "", ""]);
+  aoa.push(["", "", "", "", "", "", "", ""]);
+  aoa.push(["写真④", "", "写真⑤", "", "写真⑥", "", "", ""]);
+  aoa.push(["", "", "", "", "", "", "", ""]);
+  aoa.push(["", "", "", "", "", "", "", ""]);
+  aoa.push(["", "", "", "", "", "", "", ""]);
+  aoa.push([]);
+  aoa.push(["備考", "写真は別途貼り付けまたは別送", "", "", "", "", "", ""]);
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // 列幅。PDFの表に近い横幅
+  ws["!cols"] = [
+    {wch: 14},
+    {wch: 12},
+    {wch: 14},
+    {wch: 12},
+    {wch: 10},
+    {wch: 14},
+    {wch: 20},
+    {wch: 22}
+  ];
+
+  // 行高さ。写真欄は大きめにして貼り付けやすく
+  ws["!rows"] = aoa.map(function(_, idx){
+    if(idx === 0) return {hpt: 30};
+    if(idx === 8) return {hpt: 22};
+    if(idx >= 9 && idx <= 20) return {hpt: 21};
+    if(idx === 23 || idx === 27) return {hpt: 20};
+    if((idx >= 24 && idx <= 26) || (idx >= 28 && idx <= 30)) return {hpt: 56};
+    return {hpt: 18};
+  });
+
+  // セル結合
+  ws["!merges"] = [
+    {s:{r:0,c:2}, e:{r:1,c:4}}, // title
+    {s:{r:2,c:0}, e:{r:2,c:1}}, // logo
+    {s:{r:4,c:1}, e:{r:4,c:2}},
+    {s:{r:5,c:1}, e:{r:5,c:2}},
+    {s:{r:5,c:4}, e:{r:5,c:7}},
+    {s:{r:6,c:1}, e:{r:6,c:2}},
+    {s:{r:6,c:4}, e:{r:6,c:7}},
+    {s:{r:22,c:1}, e:{r:22,c:2}},
+    {s:{r:22,c:4}, e:{r:22,c:5}},
+    // photo frames
+    {s:{r:23,c:0}, e:{r:26,c:1}},
+    {s:{r:23,c:2}, e:{r:26,c:3}},
+    {s:{r:23,c:4}, e:{r:26,c:5}},
+    {s:{r:27,c:0}, e:{r:30,c:1}},
+    {s:{r:27,c:2}, e:{r:30,c:3}},
+    {s:{r:27,c:4}, e:{r:30,c:5}},
+    {s:{r:32,c:1}, e:{r:32,c:7}}
+  ];
+
+  // 簡易スタイル。環境によっては一部のみ反映
+  var range = XLSX.utils.decode_range(ws["!ref"]);
+  for(var R=range.s.r; R<=range.e.r; ++R){
+    for(var C=range.s.c; C<=range.e.c; ++C){
+      var addr = XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr]) ws[addr] = {t:"s", v:""};
+      ws[addr].s = {
+        alignment: {vertical:"center", horizontal:"center", wrapText:true},
+        border: {
+          top:{style:"thin", color:{rgb:"000000"}},
+          bottom:{style:"thin", color:{rgb:"000000"}},
+          left:{style:"thin", color:{rgb:"000000"}},
+          right:{style:"thin", color:{rgb:"000000"}}
+        }
+      };
+    }
+  }
+
+  // タイトルを太字風に
+  if(ws["C1"]){
+    ws["C1"].s = {
+      font:{bold:true, sz:20},
+      alignment:{vertical:"center", horizontal:"center"}
+    };
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "入庫報告書");
+
+  var wbout = XLSX.write(wb, {bookType:"xlsx", type:"array", cellStyles:true});
+  var blob = new Blob([wbout], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  var fileName = safeExcelFileName(inboundNo) + ".xlsx";
+  var file = new File([blob], fileName, {type: blob.type});
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    await navigator.share({
+      files: [file],
+      title: "Cargo Report Excel",
+      text: "入庫報告書Excel"
+    });
+  }else{
+    var url = URL.createObjectURL(blob);
+    var aTag = document.createElement("a");
+    aTag.href = url;
+    aTag.download = fileName;
+    document.body.appendChild(aTag);
+    aTag.click();
+    document.body.removeChild(aTag);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+}
+
+function showPdfGuide(){
   updateReport();
   if(!v("agentSelect")){ alert("代理店名を選択してください。"); return; }
   await renderQrDigits(extractBarcodeDigits(v("inboundNo")));
