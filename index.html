@@ -1387,6 +1387,40 @@ input[id^="no"] {
   overflow-wrap: normal !important;
 }
 
+
+/* ===== 写真の削除・撮り直しボタン ===== */
+.photo-actions {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 14px;
+}
+
+.photo-actions button {
+  flex: 1;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 8px;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.photo-retake {
+  background: #0f172a;
+  color: #fff;
+}
+
+.photo-clear {
+  background: #b91c1c;
+  color: #fff;
+}
+
+@media print {
+  .photo-actions {
+    display: none !important;
+  }
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1448,18 +1482,48 @@ input[id^="no"] {
 <button type="button" class="dark" onclick="addItem('','','','','','','カートン','')">明細行を追加</button>
 
 <h2>写真 6枚</h2>
-<p class="note">各写真は選択時に200KB以下を目標に圧縮します。</p>
+<p class="note">各写真は選択時に150KB前後を目標に圧縮します。Androidの大きい写真も自動で縮小します。間違えた写真は削除または撮り直しできます。</p>
 <div class="row">
-<div><label>写真①</label><input type="file" accept="image/*" onchange="compressPhoto(this,1)"><div id="photoStatus1" class="photo-status"></div></div>
-<div><label>写真②</label><input type="file" accept="image/*" onchange="compressPhoto(this,2)"><div id="photoStatus2" class="photo-status"></div></div>
+<div><label>写真①</label><input id="photo1" type="file" accept="image/*" onchange="compressPhoto(this,1)"><div id="photoStatus1" class="photo-status"></div>
+<div class="photo-actions">
+  <button type="button" class="photo-retake" onclick="retakePhoto(1)">撮り直し</button>
+  <button type="button" class="photo-clear" onclick="clearPhoto(1)">削除</button>
+</div>
+</div>
+<div><label>写真②</label><input id="photo2" type="file" accept="image/*" onchange="compressPhoto(this,2)"><div id="photoStatus2" class="photo-status"></div>
+<div class="photo-actions">
+  <button type="button" class="photo-retake" onclick="retakePhoto(2)">撮り直し</button>
+  <button type="button" class="photo-clear" onclick="clearPhoto(2)">削除</button>
+</div>
+</div>
 </div>
 <div class="row">
-<div><label>写真③</label><input type="file" accept="image/*" onchange="compressPhoto(this,3)"><div id="photoStatus3" class="photo-status"></div></div>
-<div><label>写真④</label><input type="file" accept="image/*" onchange="compressPhoto(this,4)"><div id="photoStatus4" class="photo-status"></div></div>
+<div><label>写真③</label><input id="photo3" type="file" accept="image/*" onchange="compressPhoto(this,3)"><div id="photoStatus3" class="photo-status"></div>
+<div class="photo-actions">
+  <button type="button" class="photo-retake" onclick="retakePhoto(3)">撮り直し</button>
+  <button type="button" class="photo-clear" onclick="clearPhoto(3)">削除</button>
+</div>
+</div>
+<div><label>写真④</label><input id="photo4" type="file" accept="image/*" onchange="compressPhoto(this,4)"><div id="photoStatus4" class="photo-status"></div>
+<div class="photo-actions">
+  <button type="button" class="photo-retake" onclick="retakePhoto(4)">撮り直し</button>
+  <button type="button" class="photo-clear" onclick="clearPhoto(4)">削除</button>
+</div>
+</div>
 </div>
 <div class="row">
-<div><label>写真⑤</label><input type="file" accept="image/*" onchange="compressPhoto(this,5)"><div id="photoStatus5" class="photo-status"></div></div>
-<div><label>写真⑥</label><input type="file" accept="image/*" onchange="compressPhoto(this,6)"><div id="photoStatus6" class="photo-status"></div></div>
+<div><label>写真⑤</label><input id="photo5" type="file" accept="image/*" onchange="compressPhoto(this,5)"><div id="photoStatus5" class="photo-status"></div>
+<div class="photo-actions">
+  <button type="button" class="photo-retake" onclick="retakePhoto(5)">撮り直し</button>
+  <button type="button" class="photo-clear" onclick="clearPhoto(5)">削除</button>
+</div>
+</div>
+<div><label>写真⑥</label><input id="photo6" type="file" accept="image/*" onchange="compressPhoto(this,6)"><div id="photoStatus6" class="photo-status"></div>
+<div class="photo-actions">
+  <button type="button" class="photo-retake" onclick="retakePhoto(6)">撮り直し</button>
+  <button type="button" class="photo-clear" onclick="clearPhoto(6)">削除</button>
+</div>
+</div>
 </div>
 
 <div class="action-area">
@@ -1849,10 +1913,123 @@ function updateReport(){
  renderBarcodeDigits(barcodeDigits);
  renderQrDigits(barcodeDigits);
 }
+function dataUrlKb(dataUrl){
+  return Math.round((dataUrl.length * 0.75) / 1024);
+}
+
+function fileKb(file){
+  return Math.round(file.size / 1024);
+}
+
+
+function clearPhoto(no){
+  var slot = g("photoSlot"+no);
+  var input = g("photo"+no);
+  var status = g("photoStatus"+no);
+
+  if(slot){
+    slot.innerHTML = "写真 " + no;
+  }
+  if(input){
+    input.value = "";
+  }
+  if(status){
+    status.innerText = "";
+  }
+  updateReport();
+}
+
+function retakePhoto(no){
+  var input = g("photo"+no);
+  if(input){
+    input.value = "";
+    input.click();
+  }
+}
+
 function compressPhoto(input,no){
- if(!input.files||!input.files[0])return;
- var reader=new FileReader();
- reader.onload=function(e){var img=new Image();img.onload=function(){var max=1200,w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max}if(h>=w&&h>max){w=Math.round(w*max/h);h=max}var c=document.createElement("canvas");c.width=w;c.height=h;var ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);var q=.82,data=c.toDataURL("image/jpeg",q),kb=Math.round(data.length*.75/1024);while(kb>200&&q>.35){q-=.07;data=c.toDataURL("image/jpeg",q);kb=Math.round(data.length*.75/1024)}while(kb>200&&w>500&&h>500){w=Math.round(w*.85);h=Math.round(h*.85);c.width=w;c.height=h;ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);data=c.toDataURL("image/jpeg",.42);kb=Math.round(data.length*.75/1024)}g("photoSlot"+no).innerHTML='<img src="'+data+'">';g("photoStatus"+no).innerText="圧縮後：約"+kb+"KB"};img.src=e.target.result};reader.readAsDataURL(input.files[0]);
+  if(!input.files || !input.files[0]) return;
+
+  var file = input.files[0];
+  var originalKb = fileKb(file);
+  var status = g("photoStatus"+no);
+  if(status) status.innerText = "圧縮中... 元：約" + originalKb + "KB";
+
+  var url = URL.createObjectURL(file);
+  var img = new Image();
+
+  img.onload = function(){
+    try{
+      var targetKb = 150;      // Androidでもメール添付しやすいように少し強め
+      var maxSide = 1000;      // 大きすぎるAndroid写真を抑える
+      var minSide = 420;
+
+      var srcW = img.naturalWidth || img.width;
+      var srcH = img.naturalHeight || img.height;
+
+      var scale = Math.min(1, maxSide / Math.max(srcW, srcH));
+      var w = Math.max(1, Math.round(srcW * scale));
+      var h = Math.max(1, Math.round(srcH * scale));
+
+      var canvas = document.createElement("canvas");
+      var ctx;
+      var data = "";
+      var kb = 999999;
+      var q = 0.82;
+
+      function drawAndEncode(width,height,quality){
+        canvas.width = width;
+        canvas.height = height;
+        ctx = canvas.getContext("2d", { alpha:false });
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0,0,width,height);
+        ctx.drawImage(img,0,0,width,height);
+        return canvas.toDataURL("image/jpeg", quality);
+      }
+
+      data = drawAndEncode(w,h,q);
+      kb = dataUrlKb(data);
+
+      // まず品質を下げる
+      while(kb > targetKb && q > 0.42){
+        q -= 0.08;
+        data = drawAndEncode(w,h,q);
+        kb = dataUrlKb(data);
+      }
+
+      // それでも大きい場合は寸法も下げる
+      while(kb > targetKb && Math.max(w,h) > minSide){
+        w = Math.round(w * 0.86);
+        h = Math.round(h * 0.86);
+        q = 0.46;
+        data = drawAndEncode(w,h,q);
+        kb = dataUrlKb(data);
+      }
+
+      var slot = g("photoSlot"+no);
+      if(slot){
+        slot.innerHTML = '<img src="'+data+'">';
+      }
+
+      if(status){
+        status.innerText = "元：約" + originalKb + "KB → 圧縮後：約" + kb + "KB";
+      }
+
+      URL.revokeObjectURL(url);
+      updateReport();
+    }catch(err){
+      console.error(err);
+      if(status) status.innerText = "写真圧縮に失敗しました。別の写真で試してください。";
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  img.onerror = function(){
+    if(status) status.innerText = "写真を読み込めませんでした。別の写真で試してください。";
+    URL.revokeObjectURL(url);
+  };
+
+  img.src = url;
 }
 async function showPdfGuide(){
   updateReport();
