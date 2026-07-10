@@ -1698,7 +1698,7 @@ function updateXrayText(){
 function sanitizeDigitsInput(el){
   if(!el) return;
   var before = el.value || "";
-  // No.欄は、数字・ハイフン・スペース・カンマ・ピリオド・コロンを許可
+  // No.欄：数字・ハイフン・スペース・カンマ・ピリオド・コロンを許可
   var cleaned = before.replace(/[^0-9\- ,\.:]/g, "");
   cleaned = cleaned.replace(/\s+/g, " ");
   if(before !== cleaned){
@@ -1840,26 +1840,27 @@ function renderQrDigits(digits){
 
     img.onload = function(){ finish(); };
     img.onerror = function(){
-      // QR画像が取得できない時も、空白にならないように数字入り代替画像を埋め込む
+      // QR取得失敗時も空白にならないよう、数字入りの代替表示にする
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220">'
         + '<rect width="220" height="220" fill="white"/>'
         + '<rect x="8" y="8" width="204" height="204" fill="white" stroke="black" stroke-width="5"/>'
-        + '<text x="110" y="105" font-size="20" text-anchor="middle" fill="black">QR読込不可</text>'
-        + '<text x="110" y="135" font-size="18" text-anchor="middle" fill="black">'+digits+'</text>'
+        + '<text x="110" y="100" font-size="18" text-anchor="middle" fill="black">QR読込不可</text>'
+        + '<text x="110" y="132" font-size="18" text-anchor="middle" fill="black">'+digits+'</text>'
         + '</svg>';
       img.removeAttribute("crossorigin");
       img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
       finish();
     };
 
-    // キャッシュで古い画像や未読込画像を拾わないように時刻パラメータを付ける
+    // QR内容は入庫番号から英字を抜いた数字部分だけ
+    // キャッシュ対策で時刻パラメータを付ける
     img.src = "https://quickchart.io/qr?text="
       + encodeURIComponent(digits)
       + "&size=220&margin=3&ecLevel=H&t="
       + Date.now();
 
-    // 通信が遅い時でもPDF処理が固まらないようにする
-    setTimeout(finish, 3000);
+    // 通信待ちで固まらないための保険
+    setTimeout(finish, 3500);
   });
 }
 
@@ -1949,7 +1950,8 @@ function clearPhoto(no){
   var status = g("photoStatus"+no);
 
   if(slot){
-    slot.innerHTML = "写真 " + no;
+    var labels = ["","①","②","③","④","⑤","⑥"];
+    slot.innerHTML = '<span class="photo-name">写真 ' + (labels[no] || no) + '</span>';
   }
   if(input){
     input.value = "";
@@ -2052,16 +2054,11 @@ function compressPhoto(input,no){
 
   img.src = url;
 }
-async async function showPdfGuide(){
-  updateReport();
-  /* QR印刷安定化 */
-  try { await renderQrDigits(extractBarcodeDigits(v('inboundNo'))); } catch(e) {}
-  await new Promise(function(r){ setTimeout(r, 400); });
-
+async function showPdfGuide(){
   updateReport();
   if(!v("agentSelect")){ alert("代理店名を選択してください。"); return; }
   await renderQrDigits(extractBarcodeDigits(v("inboundNo")));
-  await new Promise(function(resolve){ setTimeout(resolve, 150); });
+  await new Promise(function(resolve){ setTimeout(resolve, 500); });
 
   if (typeof html2canvas === "undefined" || !window.jspdf) {
     alert("PDF作成ライブラリを読み込み中です。数秒待ってからもう一度押してください。");
@@ -2086,11 +2083,11 @@ async async function showPdfGuide(){
     sheet.style.width = "794px";
     sheet.style.height = "1123px";
 
-    var canvas = await html2canvas(sheet, {useCORS:true, allowTaint:false, imageTimeout:5000, 
+    var canvas = await html2canvas(sheet, {
       scale: 2,
       backgroundColor: "#ffffff",
       useCORS: true,
-      allowTaint: true,
+      allowTaint: false,
       logging: false,
       windowWidth: 900,
       windowHeight: 1300
