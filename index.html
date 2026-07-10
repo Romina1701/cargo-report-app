@@ -1424,6 +1424,12 @@ input[id^="no"] {
 
 
 
+
+/* ===== 写真枠ラベル非表示 ===== */
+.photo-name {
+  display: none !important;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1578,12 +1584,12 @@ input[id^="no"] {
 <div class="total"><div>合計個数</div><div id="outTotalPieces">0個</div><div>合計重量</div><div id="outTotalWeight">0.0Kg</div></div>
 
 <div class="photo-grid">
-<div class="photo-slot" id="photoSlot1"><span class="photo-name">写真 ①</span></div>
-<div class="photo-slot" id="photoSlot2"><span class="photo-name">写真 ②</span></div>
-<div class="photo-slot" id="photoSlot3"><span class="photo-name">写真 ③</span></div>
-<div class="photo-slot" id="photoSlot4"><span class="photo-name">写真 ④</span></div>
-<div class="photo-slot" id="photoSlot5"><span class="photo-name">写真 ⑤</span></div>
-<div class="photo-slot" id="photoSlot6"><span class="photo-name">写真 ⑥</span></div>
+<div class="photo-slot" id="photoSlot1"></div>
+<div class="photo-slot" id="photoSlot2"></div>
+<div class="photo-slot" id="photoSlot3"></div>
+<div class="photo-slot" id="photoSlot4"></div>
+<div class="photo-slot" id="photoSlot5"></div>
+<div class="photo-slot" id="photoSlot6"></div>
 </div>
 
 <div class="blank-space"></div>
@@ -1628,6 +1634,7 @@ var agents=[
 {code:"KNC",name:"鴻池運輸株式会社"},
 {code:"YGF",name:"ヤマト運輸株式会社"},
 {code:"KWE",name:"株式会社近鉄エクスプレス"},
+{code:"MAC",displayCode:"MAC",name:"名鉄ワールドトランスポート"},
 {code:"MWT",name:"名鉄ワールドトランスポート株式会社"},
 {code:"TAD",name:"泰運商会"},
 {code:"APEX",name:"株式会社エイペックスインターナショナル"},
@@ -1955,8 +1962,8 @@ function clearPhoto(no){
   var status = g("photoStatus"+no);
 
   if(slot){
-    var labels = ["","①","②","③","④","⑤","⑥"];
-    slot.innerHTML = '<span class="photo-name">写真 ' + (labels[no] || no) + '</span>';
+    // 写真欄には「写真①」などの文字を表示しない
+    slot.innerHTML = "";
   }
   if(input){
     input.value = "";
