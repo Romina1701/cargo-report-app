@@ -1025,7 +1025,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 
 #outXrayAt,
 #outInboundNo {
-  font-size: 12.5px !important;
+  font-size: 14.5px !important;
   font-weight: 800 !important;
 }
 
@@ -1090,7 +1090,7 @@ table{width:100%;border-collapse:collapse}.detail-table{border:2px solid #111;fo
 
   #outXrayAt,
   #outInboundNo {
-    font-size: 12.5px !important;
+    font-size: 14.5px !important;
   }
 
   .qr {
@@ -1428,6 +1428,24 @@ input[id^="no"] {
 /* ===== 写真枠ラベル非表示 ===== */
 .photo-name {
   display: none !important;
+}
+
+
+/* ===== 入庫Noを少し大きく ===== */
+#outInboundNo {
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.2px !important;
+  line-height: 1.1 !important;
+}
+
+@media print {
+  #outInboundNo {
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.2px !important;
+    line-height: 1.1 !important;
+  }
 }
 
 </style>
