@@ -1479,7 +1479,7 @@ input[id^="no"] {
 </div>
 
 <h2>貨物明細</h2>
-<p class="note">No.は必要な場合のみ入力できます。No.は数字とハイフン「-」を入力できます。L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。重量欄はその行の総重量として入力します。合計重量は各行の重量を足して自動計算します。</p>
+<p class="note">No.は必要な場合のみ入力できます。No.は数字・ハイフン「-」・スペース・カンマ「,」・ピリオド「.」・コロン「:」を入力できます。L / W / H / 個数 / 重量は、数字と小数点「.」だけ入力できます。スマホでは数字キーボードが出ます。重量欄はその行の総重量として入力します。合計重量は各行の重量を足して自動計算します。</p>
 <div id="items"></div>
 <button type="button" class="dark" onclick="addItem('','','','','','','カートン','')">明細行を追加</button>
 
@@ -1537,7 +1537,7 @@ input[id^="no"] {
 <div class="sheet-wrap">
 <div class="sheet">
 <div class="header">
-<div class="qr"><img id="qrImg" alt="QR"></div>
+<div class="qr"><img id="qrImg" alt="QR" crossorigin="anonymous" referrerpolicy="no-referrer"></div>
 <div class="title">入庫報告書</div>
 <div class="head-right">
 <div class="head-line"><div class="head-label">作成日時</div><div class="head-value" id="outCreatedAt"></div></div>
@@ -1698,13 +1698,13 @@ function updateXrayText(){
 function sanitizeDigitsInput(el){
   if(!el) return;
   var before = el.value || "";
-  var cleaned = before.replace(/[^0-9-]/g, "");
-  cleaned = cleaned.replace(/--+/g, "-");
+  // No.欄は、数字・ハイフン・スペース・カンマ・ピリオド・コロンを許可
+  var cleaned = before.replace(/[^0-9\- ,\.:]/g, "");
+  cleaned = cleaned.replace(/\s+/g, " ");
   if(before !== cleaned){
     el.value = cleaned;
   }
 }
-
 
 function sanitizeDecimalInput(el){
   if(!el) return;
@@ -1743,7 +1743,7 @@ function addItem(no,l,w,h,pieces,weight,shape,remarks){
  box.innerHTML =
  '<div class="item-title"><strong>明細 '+itemCount+'</strong><button type="button" class="danger" onclick="removeItem('+itemCount+')">削除</button></div>'
  + '<div class="row4">'
- + '<div><label>No.</label><input id="no'+itemCount+'" type="text" inputmode="text" pattern="[0-9-]*" value="'+no+'" oninput="sanitizeDigitsInput(this);updateReport()"></div>'
+ + '<div><label>No.</label><input id="no'+itemCount+'" type="text" inputmode="text" pattern="[0-9\\- ,\\.:]*" value="'+no+'" oninput="sanitizeDigitsInput(this);updateReport()"></div>'
  + '<div><label>L</label><input id="l'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+l+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
  + '<div><label>W</label><input id="w'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+w+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
  + '<div><label>H</label><input id="h'+itemCount+'" type="text" inputmode="decimal" pattern="[0-9.]*" value="'+h+'" oninput="sanitizeDecimalInput(this);updateReport()"></div>'
@@ -1828,19 +1828,38 @@ function renderQrDigits(digits){
   }
 
   return new Promise(function(resolve){
-    img.onload = function(){ resolve(); };
-    img.onerror = function(){
-      // 読み込み失敗時は数字だけを表示
-      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180">'
-        + '<rect width="180" height="180" fill="white"/>'
-        + '<rect x="4" y="4" width="172" height="172" fill="white" stroke="black" stroke-width="4"/>'
-        + '<text x="90" y="96" font-size="20" text-anchor="middle" fill="black">'+digits+'</text>'
-        + '</svg>';
-      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    var done = false;
+    function finish(){
+      if(done) return;
+      done = true;
       resolve();
+    }
+
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+
+    img.onload = function(){ finish(); };
+    img.onerror = function(){
+      // QR画像が取得できない時も、空白にならないように数字入り代替画像を埋め込む
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220">'
+        + '<rect width="220" height="220" fill="white"/>'
+        + '<rect x="8" y="8" width="204" height="204" fill="white" stroke="black" stroke-width="5"/>'
+        + '<text x="110" y="105" font-size="20" text-anchor="middle" fill="black">QR読込不可</text>'
+        + '<text x="110" y="135" font-size="18" text-anchor="middle" fill="black">'+digits+'</text>'
+        + '</svg>';
+      img.removeAttribute("crossorigin");
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      finish();
     };
-    // QR内容は入庫番号から英字を抜いた数字部分だけ
-    img.src = "https://quickchart.io/qr?text=" + encodeURIComponent(digits) + "&size=180&margin=2&ecLevel=M";
+
+    // キャッシュで古い画像や未読込画像を拾わないように時刻パラメータを付ける
+    img.src = "https://quickchart.io/qr?text="
+      + encodeURIComponent(digits)
+      + "&size=220&margin=3&ecLevel=H&t="
+      + Date.now();
+
+    // 通信が遅い時でもPDF処理が固まらないようにする
+    setTimeout(finish, 3000);
   });
 }
 
@@ -2033,7 +2052,12 @@ function compressPhoto(input,no){
 
   img.src = url;
 }
-async function showPdfGuide(){
+async async function showPdfGuide(){
+  updateReport();
+  /* QR印刷安定化 */
+  try { await renderQrDigits(extractBarcodeDigits(v('inboundNo'))); } catch(e) {}
+  await new Promise(function(r){ setTimeout(r, 400); });
+
   updateReport();
   if(!v("agentSelect")){ alert("代理店名を選択してください。"); return; }
   await renderQrDigits(extractBarcodeDigits(v("inboundNo")));
@@ -2062,7 +2086,7 @@ async function showPdfGuide(){
     sheet.style.width = "794px";
     sheet.style.height = "1123px";
 
-    var canvas = await html2canvas(sheet, {
+    var canvas = await html2canvas(sheet, {useCORS:true, allowTaint:false, imageTimeout:5000, 
       scale: 2,
       backgroundColor: "#ffffff",
       useCORS: true,
