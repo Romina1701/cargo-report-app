@@ -1508,15 +1508,15 @@ input[id^="no"] {
 <button type="button" class="dark" onclick="addItem('','','','','','','カートン','')">明細行を追加</button>
 
 <h2>写真 6枚</h2>
-<p class="note">各写真は選択時に150KB前後を目標に圧縮します。Androidの大きい写真も自動で縮小します。間違えた写真は削除または撮り直しできます。</p>
+<p class="note">各写真欄を押すと、Androidでは背面カメラが起動しやすい設定です。撮影した写真は選択時に150KB前後を目標に圧縮します。間違えた写真は削除または撮り直しできます。</p>
 <div class="row">
-<div><label>写真①</label><input id="photo1" type="file" accept="image/*" onchange="compressPhoto(this,1)"><div id="photoStatus1" class="photo-status"></div>
+<div><label>写真①</label><input id="photo1" type="file" accept="image/*" capture="environment" onchange="compressPhoto(this,1)"><div id="photoStatus1" class="photo-status"></div>
 <div class="photo-actions">
   <button type="button" class="photo-retake" onclick="retakePhoto(1)">撮り直し</button>
   <button type="button" class="photo-clear" onclick="clearPhoto(1)">削除</button>
 </div>
 </div>
-<div><label>写真②</label><input id="photo2" type="file" accept="image/*" onchange="compressPhoto(this,2)"><div id="photoStatus2" class="photo-status"></div>
+<div><label>写真②</label><input id="photo2" type="file" accept="image/*" capture="environment" onchange="compressPhoto(this,2)"><div id="photoStatus2" class="photo-status"></div>
 <div class="photo-actions">
   <button type="button" class="photo-retake" onclick="retakePhoto(2)">撮り直し</button>
   <button type="button" class="photo-clear" onclick="clearPhoto(2)">削除</button>
@@ -1524,13 +1524,13 @@ input[id^="no"] {
 </div>
 </div>
 <div class="row">
-<div><label>写真③</label><input id="photo3" type="file" accept="image/*" onchange="compressPhoto(this,3)"><div id="photoStatus3" class="photo-status"></div>
+<div><label>写真③</label><input id="photo3" type="file" accept="image/*" capture="environment" onchange="compressPhoto(this,3)"><div id="photoStatus3" class="photo-status"></div>
 <div class="photo-actions">
   <button type="button" class="photo-retake" onclick="retakePhoto(3)">撮り直し</button>
   <button type="button" class="photo-clear" onclick="clearPhoto(3)">削除</button>
 </div>
 </div>
-<div><label>写真④</label><input id="photo4" type="file" accept="image/*" onchange="compressPhoto(this,4)"><div id="photoStatus4" class="photo-status"></div>
+<div><label>写真④</label><input id="photo4" type="file" accept="image/*" capture="environment" onchange="compressPhoto(this,4)"><div id="photoStatus4" class="photo-status"></div>
 <div class="photo-actions">
   <button type="button" class="photo-retake" onclick="retakePhoto(4)">撮り直し</button>
   <button type="button" class="photo-clear" onclick="clearPhoto(4)">削除</button>
@@ -1538,13 +1538,13 @@ input[id^="no"] {
 </div>
 </div>
 <div class="row">
-<div><label>写真⑤</label><input id="photo5" type="file" accept="image/*" onchange="compressPhoto(this,5)"><div id="photoStatus5" class="photo-status"></div>
+<div><label>写真⑤</label><input id="photo5" type="file" accept="image/*" capture="environment" onchange="compressPhoto(this,5)"><div id="photoStatus5" class="photo-status"></div>
 <div class="photo-actions">
   <button type="button" class="photo-retake" onclick="retakePhoto(5)">撮り直し</button>
   <button type="button" class="photo-clear" onclick="clearPhoto(5)">削除</button>
 </div>
 </div>
-<div><label>写真⑥</label><input id="photo6" type="file" accept="image/*" onchange="compressPhoto(this,6)"><div id="photoStatus6" class="photo-status"></div>
+<div><label>写真⑥</label><input id="photo6" type="file" accept="image/*" capture="environment" onchange="compressPhoto(this,6)"><div id="photoStatus6" class="photo-status"></div>
 <div class="photo-actions">
   <button type="button" class="photo-retake" onclick="retakePhoto(6)">撮り直し</button>
   <button type="button" class="photo-clear" onclick="clearPhoto(6)">削除</button>
@@ -1618,45 +1618,11 @@ input[id^="no"] {
 
 <script>
 var itemCount=0;
-var selectedAgentIndex=0;
+var selectedAgentIndex=-1;
 var currentDate=new Date();
 
 var agents=[
-{code:"IEC",name:"インターナショナルエクスプレス株式会社"},
-{code:"VHF",name:"ロジスティードエクスプレス株式会社"},
-{code:"OCS",name:"株式会社OCS"},
-{code:"MLG",name:"商船三井ロジスティクス株式会社"},
-{code:"MFJ",displayCode:"MFJ",name:"MAINFREIGHT"},
-{code:"DSV",name:"ディエスヴィ・エアーシー株式会社"},
-{code:"KAD",displayCode:"KKS",name:"ケイラインロジスティックス株式会社"},
-{code:"SSA",name:"株式会社住友倉庫"},
-{code:"YGF",displayCode:"YTJ",name:"ヤマト運輸株式会社"},
-{code:"KAF",name:"ケイヒン航空株式会社"},
-{code:"NNR",name:"西日本鉄道株式会社"},
-{code:"YLK",displayCode:"YJP",name:"郵船ロジスティクス株式会社"},
-{code:"KAD",name:"ケイラインロジスティックス株式会社"},
-{code:"YLK",name:"郵船ロジスティクス株式会社"},
-{code:"SGJ",name:"SGHグローバル・ジャパン株式会社"},
-{code:"KNJ",name:"キューネアンド・ナーゲル株式会社"},
-{code:"EIJ",name:"エクスペダイターズ・ジャパン株式会社"},
-{code:"FKT",name:"福山通運株式会社"},
-{code:"KSC",name:"コクサイエアロマリン株式会社"},
-{code:"ATA",name:"株式会社アルプス物流"},
-{code:"JPT",name:"ジュピター・ジャパン株式会社"},
-{code:"UNI",name:"三菱倉庫株式会社"},
-{code:"UCI",name:"ユーシーアイエアフレイトジャパン株式会社"},
-{code:"KNC",name:"鴻池運輸株式会社"},
-{code:"YGF",name:"ヤマト運輸株式会社"},
-{code:"KWE",name:"株式会社近鉄エクスプレス"},
-{code:"MAC",displayCode:"MAC",name:"名鉄ワールドトランスポート"},
-{code:"MWT",name:"名鉄ワールドトランスポート株式会社"},
-{code:"TAD",name:"泰運商会"},
-{code:"APEX",name:"株式会社エイペックスインターナショナル"},
-{code:"JLI",name:"株式会社ロジ・レックス"},
-{code:"TSC",name:"辰日商会"},
-{code:"SNO",name:"佐野運輸株式会社"},
-{code:"JIF",name:"ジャスフォワーディングジャパン株式会社"},
-{code:"KSK",name:"京神倉庫株式会社"}
+{code:"ACS",name:"株式会社エアーポートカーゴサービス"}
 ];
 
 var shapeOptions=["カートン","パレット","木箱（燻蒸印あり）","木箱（燻蒸印なし）","木枠（燻蒸印あり）","木枠（燻蒸印なし）","ロール","ベール","ビニール","トライウォール","紙袋","ドラム","ファイバードラム","ジェリ缶","フレコンバッグ","４Gカートン"];
