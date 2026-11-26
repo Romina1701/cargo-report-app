@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
 <title>貨物パレット入力</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <style>
 :root{--bg:#eef2f7;--card:#fff;--ink:#0f172a;--muted:#64748b;--blue:#2563eb;--blue2:#1d4ed8;--red:#dc2626;--green:#15803d;--line:#cbd5e1;--soft:#e2e8f0;--amber:#d97706}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -68,7 +68,7 @@ label{display:block;font-weight:900;margin-bottom:6px}
 </head>
 <body>
 <main class="app">
-<h1>貨物パレット入力 <small style="font-size:11px;color:#64748b">高速版</small></h1>
+<h1>貨物パレット入力 <small style="font-size:11px;color:#64748b">高速・帳票 V6</small></h1>
 
 <section class="card">
   <div class="row space">
@@ -155,12 +155,17 @@ let state=load()||{
   activeId:null,lastSize:null,lastRegistration:null
 };
 if(!state.activeId)state.activeId=state.pallets[0].id;
-let activeField='caseNo',battery=false,saveTimer=null;
+let activeField='caseNo',battery=false,saveTimer=null,listTimer=null,dirty=false;
+let excelLoading=null;
+function loadExcel(){if(window.ExcelJS)return Promise.resolve();if(!excelLoading)excelLoading=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';script.onload=resolve;script.onerror=()=>{script.remove();excelLoading=null;reject(Error('Excelライブラリの読み込みに失敗しました。通信状態を確認してください。'))};document.head.appendChild(script)});return excelLoading;}
+function queueList(){clearTimeout(listTimer);listTimer=setTimeout(renderList,250)}
+
 
 function uid(){return (crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random())}
 function active(){return state.pallets.find(p=>p.id===state.activeId)}
-function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>localStorage.setItem(KEY,JSON.stringify(state)),70)}
-function saveNow(){clearTimeout(saveTimer);localStorage.setItem(KEY,JSON.stringify(state))}
+function save(){dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,350)}
+function saveNow(){clearTimeout(saveTimer);if(!dirty)return;try{localStorage.setItem(KEY,JSON.stringify(state));dirty=false}catch(e){msg("自動保存に失敗しました。Excelを出力して保管してください。","err")}}
+window.addEventListener("pagehide",saveNow);document.addEventListener("visibilitychange",()=>{if(document.hidden)saveNow()});
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function numSort(a,b){return Number(a)-Number(b)}
@@ -185,6 +190,7 @@ function render(){
   renderList();
 }
 function renderList(){
+  clearTimeout(listTimer);listTimer=null;
   const p=active();els.list.replaceChildren();
   if(!p.cases.length){els.list.innerHTML='<div class="empty">まだ登録がありません</div>';return}
   const frag=document.createDocumentFragment();
@@ -206,7 +212,7 @@ function appendKey(k){
   const el=$('#'+activeField);
   if(activeField!=='caseNo' && k==='-')return;
   if(activeField!=='caseNo' && k==='.') {
-    if(activeField==='weight'&&!el.value.includes('.')) el.value+='.';
+    if(activeField==='weight'&&!el.value.includes('.')){el.value+='.';active().weight=el.value;els.weightView.textContent=el.value+'kg';save()}
     return;
   }
   if(activeField==='caseNo'){
@@ -261,7 +267,7 @@ function register(){
   state.lastSize={L,W,H};
   state.lastRegistration={palletId:p.id,numbers:added};
   els.caseNo.value='';els.L.value='';els.W.value='';els.H.value='';battery=false;
-  save();els.count.textContent=p.cases.length+'個';els.battery.classList.remove('on');els.battery.textContent='電池';renderList();setActiveField('caseNo');navigator.vibrate?.(35);
+  save();els.count.textContent=p.cases.length+'個';els.battery.classList.remove('on');els.battery.textContent='電池';queueList();setActiveField('caseNo');
   msg(`${p.name}へ${added.length}個登録しました`);
 }
 function undo(){
@@ -273,6 +279,7 @@ function undo(){
 
 function handleKeyClick(e){
   const b=e.target.closest('button');if(!b)return;
+  if(dirty)save();if(listTimer){clearTimeout(listTimer);listTimer=setTimeout(renderList,250)}
   if(b.dataset.k!==undefined)return appendKey(b.dataset.k);
   const a=b.dataset.action;
   if(a==='battery'){battery=!battery;els.battery.classList.toggle('on',battery);els.battery.textContent=battery?'電池 ON':'電池'}
@@ -287,7 +294,7 @@ $('#quickActions').addEventListener('click',handleKeyClick);
 els.weight.addEventListener('click',()=>setActiveField('weight'));
 $('#renameBtn').onclick=()=>{const p=active();const n=prompt('パレットの表示名',p.name);if(n?.trim()){p.name=n.trim();save();render()}};
 $('#addPalletBtn').onclick=()=>{const n=prompt('追加するパレット名',String.fromCharCode(65+state.pallets.length)+'パレット');if(!n?.trim())return;const p={id:uid(),name:n.trim(),weight:'',cases:[]};state.pallets.push(p);state.activeId=p.id;save();render()};
-$('#newBtn').onclick=()=>{if(confirm('すべての入力データを削除して新規作業を始めますか？')){localStorage.removeItem(KEY);location.reload()}};
+$('#newBtn').onclick=()=>{if(confirm('すべての入力データを削除して新規作業を始めますか？')){clearTimeout(saveTimer);dirty=false;localStorage.removeItem(KEY);location.reload()}};
 $('#allListBtn').onclick=()=>{renderAll();$('#modal').classList.add('show')};
 $('#closeModal').onclick=()=>$('#modal').classList.remove('show');
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')$('#modal').classList.remove('show')});
@@ -303,85 +310,26 @@ function renderAll(){
 }
 
 function makeWorkbook(){
-  if(typeof XLSX==='undefined')throw new Error('Excel作成ライブラリを読み込めません。通信状態を確認してください。');
-  const all=[];
-  state.pallets.forEach((p,pi)=>p.cases.forEach(c=>all.push({
-    no:Number(c.no),pallet:p.name,palletOrder:pi,L:Number(c.L),W:Number(c.W),H:Number(c.H),
-    battery:c.battery?'有':'',weight:p.weight===''?null:Number(p.weight)
-  })));
-  const wb=XLSX.utils.book_new();
-  const totalCases=all.length;
-  const totalWeight=state.pallets.reduce((s,p)=>s+(Number(p.weight)||0),0);
-  const batteryCount=all.filter(c=>c.battery).length;
-  const missingWeight=state.pallets.filter(p=>p.cases.length && p.weight==='').length;
-  const num=n=>Number.isInteger(n)?n:Number(n.toFixed(2));
-  const header=(ws,ref)=>{ws['!autofilter']={ref};ws['!margins']={left:.3,right:.3,top:.45,bottom:.45,header:.2,footer:.2};ws['!pageSetup']={paperSize:9,orientation:'portrait',fitToWidth:1,fitToHeight:0}};
-  const append=(rows,name,widths,filter)=>{
-    const ws=XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols']=widths.map(w=>({wch:w}));
-    if(filter)header(ws,filter);
-    else {ws['!margins']={left:.3,right:.3,top:.45,bottom:.45};ws['!pageSetup']={paperSize:9,orientation:'portrait',fitToWidth:1,fitToHeight:0}}
-    XLSX.utils.book_append_sheet(wb,ws,name);
-    return ws;
-  };
-
-  // 先頭に全体概要を配置
-  const summary=[
-    ['貨物パレット作業サマリー','','',''],
-    ['項目','集計値','単位','備考'],
-    ['登録パレット数',state.pallets.length,'枚',''],
-    ['登録ケース数',totalCases,'個',''],
-    ['電池ラベルあり',batteryCount,'個',''],
-    ['貨物重量合計',num(totalWeight),'kg','各パレットの入力重量の合計'],
-    ['重量未入力パレット',missingWeight,'枚',missingWeight?'重量を確認してください':''],
-    [],
-    ['パレット別集計','','',''],
-    ['パレット名','ケース数','貨物重量(kg)','電池ラベルあり'],
-  ];
-  state.pallets.forEach(p=>summary.push([
-    p.name,p.cases.length,p.weight===''?'未入力':Number(p.weight),p.cases.filter(c=>c.battery).length
-  ]));
-  const sumStart=11, sumEnd=10+state.pallets.length;
-  summary.push(['合計',{f:`SUM(B${sumStart}:B${sumEnd})`},{f:`SUM(C${sumStart}:C${sumEnd})`},{f:`SUM(D${sumStart}:D${sumEnd})`}]);
-  summary.push([]);
-  summary.push(['※重量は個別ケース重量ではなく、各パレットに積んだ貨物の入力重量です。']);
-  append(summary,'サマリー',[25,17,22,36]);
-
-  // 全ケース番号昇順
-  const caseRows=[['ケースNO.','パレット','L (cm)','W (cm)','H (cm)','電池']];
-  [...all].sort((a,b)=>a.no-b.no).forEach(x=>caseRows.push([x.no,x.pallet,x.L,x.W,x.H,x.battery]));
-  const wsCase=append(caseRows,'ケースNO順',[15,24,12,12,12,8],`A1:F${Math.max(1,caseRows.length)}`);
-  wsCase['!freeze']={xSplit:0,ySplit:1};
-
-  // パレットごとのケースを若い順にした連続表。各行にパレット名がありExcel上で絞り込み可能。
-  const palletRows=[['パレット','ケースNO.','L (cm)','W (cm)','H (cm)','電池']];
-  [...all].sort((a,b)=>a.palletOrder-b.palletOrder||a.no-b.no)
-    .forEach(x=>palletRows.push([x.pallet,x.no,x.L,x.W,x.H,x.battery]));
-  const wsP=append(palletRows,'パレット順',[24,15,12,12,12,8],`A1:F${Math.max(1,palletRows.length)}`);
-  wsP['!freeze']={xSplit:0,ySplit:1};
-
-  // 末尾にも重量集計
-  const weightRows=[['パレット','ケース数','貨物重量 (kg)','電池ラベルあり']];
-  state.pallets.forEach(p=>weightRows.push([
-    p.name,p.cases.length,p.weight===''?'未入力':Number(p.weight),p.cases.filter(c=>c.battery).length
-  ]));
-  const weightEnd=1+state.pallets.length;
-  weightRows.push(['合計',{f:`SUM(B2:B${weightEnd})`},{f:`SUM(C2:C${weightEnd})`},{f:`SUM(D2:D${weightEnd})`}]);
-  append(weightRows,'重量集計',[25,14,22,20],`A1:D${weightRows.length}`);
-  return wb;
+ const wb=new ExcelJS.Workbook(), ps=state.pallets.filter(p=>p.cases.length||p.weight!==''), all=ps.flatMap(p=>p.cases.map(c=>({...c,pallet:p.name}))), total=all.length, bat=all.filter(c=>c.battery).length, weight=Math.round(ps.reduce((n,p)=>n+(Number(p.weight)||0),0)*1000)/1000;
+ const date=new Date().toLocaleDateString('ja-JP');
+ function sheet(name,widths,title,sub){const w=wb.addWorksheet(name,{pageSetup:{paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.25,right:.25,top:.4,bottom:.4,header:.15,footer:.15}}});w.columns=widths.map(width=>({width}));band(w,title,'17365D',24);band(w,sub,'4472C4',20);w.headerFooter.oddFooter='&C&P / &N';return w;}
+ function band(w,text,color='4472C4',height=23){const r=w.addRow([text]);w.mergeCells(r.number,1,r.number,w.columns.length);r.height=height;r.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+color}};r.getCell(1).font={name:'Meiryo',bold:true,color:{argb:'FFFFFFFF'},size:11};r.getCell(1).alignment={vertical:'middle',wrapText:true};return r;}
+ function row(w,values,kind='data',batteryCol=0){const r=w.addRow(values);r.height=kind==='total'?30:kind==='head'?28:21;for(let i=1;i<=w.columns.length;i++){const c=r.getCell(i);c.font={name:'Meiryo',size:kind==='total'?13:11,bold:kind!=='data'||(i===batteryCol&&c.value==='有'),color:{argb:i===batteryCol&&c.value==='有'?'FFC00000':kind==='head'||kind==='total'?'FFFFFFFF':'FF17365D'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:kind==='head'?'FF4472C4':kind==='total'?'FF17365D':r.number%2?'FFF0F5FC':'FFFFFFFF'}};c.alignment={vertical:'middle',horizontal:i===1?'left':'center',wrapText:true};c.border={bottom:{style:'thin',color:{argb:'FFD9E2F3'}}};}return r;}
+ const dims=p=>{const m=new Map();p.cases.forEach(c=>{const k=`${c.L} × ${c.W} × ${c.H}`;m.set(k,(m.get(k)||0)+1)});return [...m].map(([k,n])=>`${k} × ${n}個`).join(' ／ ')};
+ const count=p=>p.cases.filter(c=>c.battery).length;
+ const sorted=cs=>[...cs].sort((a,b)=>Number(a.no)-Number(b.no));
+ const summary=sheet('サマリー',[23,15,21,19,16],'パレット別サイズ一覧',`作成日：${date} ｜ サイズ：cm ／ 重量：kg`);
+ band(summary,'■ 全体概要');row(summary,['総ケース数','パレット数','総重量（kg）','電池あり（個）','重量未入力'],'head');row(summary,[total,ps.length,weight,bat,ps.filter(p=>p.weight==='').length],'total');summary.addRow([]);
+ band(summary,'■ パレット別集計');row(summary,['パレット','個数','貨物重量（kg）','電池あり（個）','重量確認'],'head');
+ ps.forEach(p=>row(summary,[p.name,p.cases.length,p.weight===''?'未入力':Number(p.weight),count(p),p.weight===''?'要確認':'入力済']));row(summary,['合計',total,weight,bat,''],'total');summary.addRow([]);
+ band(summary,'■ サイズ別内訳');row(summary,['パレット','L（cm）','W（cm）','H（cm）','個数'],'head');
+ ps.forEach(p=>{const m=new Map();p.cases.forEach(c=>{const k=[Number(c.L),Number(c.W),Number(c.H)].join('|');m.set(k,(m.get(k)||0)+1)});for(const [k,n] of m)row(summary,[p.name,...k.split('|').map(Number),n]);});row(summary,['合計','','','',total],'total');
+ if(ps.some(p=>p.weight===''))band(summary,'※ 重量合計は入力済み重量のみ。未入力の重量を確認してください。','9A3412',30);
+ const c=sheet('ケースNO順',[15,21,12,12,12,23],'ケース一覧（ケースNO順）',`全${total}ケース ｜ サイズ：cm ｜ 電池「有」＝バッテリー入り`);row(c,['ケースNo.','パレット','L（cm）','W（cm）','H（cm）','電池（バッテリー入り）'],'head');c.pageSetup.printTitlesRow='1:3';c.views=[{state:'frozen',ySplit:3}];sorted(all).forEach((x,i)=>{const r=row(c,[Number(x.no),x.pallet,Number(x.L),Number(x.W),Number(x.H),x.battery?'有':'―'],'data',6);if((i+1)%25===0&&i+1<total)r.addPageBreak()});
+ const psh=sheet('パレット順',[20,15,15,15,26],'パレット別サイズ一覧','サイズ：cm ／ 重量：kg ｜ 電池「有」＝バッテリー入り');ps.forEach(p=>{band(psh,`${p.name}　個数：${p.cases.length}個　貨物重量：${p.weight===''?'未入力':p.weight+' kg'}　バッテリー入り：${count(p)||'なし'}`);row(psh,['ケースNo.','L（cm）','W（cm）','H（cm）','電池（バッテリー入り）'],'head');sorted(p.cases).forEach(x=>row(psh,[Number(x.no),Number(x.L),Number(x.W),Number(x.H),x.battery?'有':'―'],'data',5));psh.addRow([])});band(psh,`合計：${total}個　貨物重量：${weight} kg　電池：${bat}個`);
+ const w=sheet('重量集計',[25,20,27],'パレット別　重量集計','個数・貨物重量の集計 ｜ 重量単位：kg');row(w,['パレット','個数','貨物重量（kg）'],'head');ps.forEach(p=>row(w,[p.name,p.cases.length,p.weight===''?'未入力':Number(p.weight)]));row(w,['合計',total,weight],'total');return wb;
 }
-$('#excelBtn').onclick=()=>{
-  try{
-    saveNow();
-    const count=state.pallets.reduce((s,p)=>s+p.cases.length,0);
-    if(!count&&!confirm('ケースが未登録です。このままExcelを出力しますか？'))return;
-    const wb=makeWorkbook();
-    const d=new Date(),pad=n=>String(n).padStart(2,'0');
-    XLSX.writeFile(wb,`貨物パレット明細_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.xlsx`);
-    msg('Excelを出力しました');
-  }catch(e){msg(e.message||'Excel出力に失敗しました','err')}
-};
-
+$('#excelBtn').onclick=async()=>{const btn=$('#excelBtn');btn.disabled=true;btn.textContent='Excel作成中…';try{saveNow();await loadExcel();if(typeof ExcelJS==='undefined')throw Error('Excelライブラリを読み込めません。通信状態を確認してください。');const buf=await makeWorkbook().xlsx.writeBuffer();const url=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));const a=document.createElement('a');a.href=url;a.download='パレット別サイズ一覧_V6_'+new Date().toISOString().slice(0,10)+'.xlsx';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);msg('Excelを出力しました')}catch(e){msg(e.message,'err')}finally{btn.disabled=false;btn.textContent='Excel出力'}};
 // ボタンのtouch-action:manipulationでダブルタップ拡大を防ぎ、タップイベントは妨げない
 render();setActiveField('caseNo');
 })();
